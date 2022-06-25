@@ -51,8 +51,7 @@ Or type the following if you want to install this in your home directoy instead.
 
 ```sh:
 $ git clone https://github.com/ShellShoccar-jpn/tokideli.git
-$ su -
-# tokideli/INSTALL.sh $HOME/tokideli
+$ tokideli/INSTALL.sh $HOME/tokideli
 ```
 
 The "INSTALL.sh" will build commands, copy the command to the directory, and help you add the directory into the environment variable "PATH."
