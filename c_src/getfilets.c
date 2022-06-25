@@ -7,7 +7,7 @@
 #           -c ... Prints the timestamps in Calendar-time (YYYYMMDDhhmmss)
 #                  in yout timezone (default)
 #           -e ... Prints the timestamps in UNIX Epoch time
-#           -i ... Prints the timestamps in ISO8601 format
+#           -I ... Prints the timestamps in ISO8601 format
 #           -u ... Set the date in UTC when -c option is set
 #                  (same as that of date command)
 #           -- ... Finishes parsing arguments as options
@@ -21,7 +21,7 @@
 #
 # How to compile : cc -O3 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-06-25
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-06-26
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -63,7 +63,7 @@ void print_usage_and_exit(void) {
     "          -c ... Prints the timestamps in Calendar-time (YYYYMMDDhhmmss)\n"
     "                 in yout timezone (default)\n"
     "          -e ... Prints the timestamps in UNIX Epoch time\n"
-    "          -i ... Prints the timestamps in ISO8601 format\n"
+    "          -I ... Prints the timestamps in ISO8601 format\n"
     "          -u ... Set the date in UTC when -c option is set\n"
     "                 (same as that of date command)\n"
     "          -- ... Finishes parsing arguments as options\n"
@@ -74,7 +74,7 @@ void print_usage_and_exit(void) {
     "          * The latter format is set by -l option.\n"
     "Retuen  : Return 0 only when timestamps of all files were able to be\n"
     "          gotten. \n"
-    "Version : 2022-06-25 23:35:46 JST\n"
+    "Version : 2022-06-26 05:14:48 JST\n"
     "          (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -137,12 +137,12 @@ iFmttype = 0; /* 0:YYYYMMDDhhmmss 1:UnixTime 2:ISO8601 */
 iNanosec = 0; /* 0:second only 1:nanosecond */
 
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "9cehiuv")) != -1) {
+while ((i=getopt(argc, argv, "9cehIuv")) != -1) {
   switch (i) {
     case '9': iNanosec = 1;                  break;
     case 'c': iFmttype = 0;                  break;
     case 'e': iFmttype = 1;                  break;
-    case 'i': iFmttype = 2;                  break;
+    case 'I': iFmttype = 2;                  break;
     case 'u': (void)setenv("TZ", "UTC0", 1); break;
     case 'v': giVerbose++;                   break;
     case 'h': print_usage_and_exit();
