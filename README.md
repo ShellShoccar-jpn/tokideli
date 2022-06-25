@@ -25,7 +25,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 Several more commands are available.
 
 * [`calclock`](bin/calclock) ..... Convert bewteen the Calendar time and UNIX time
-* [`getfilets`](c_src/getftimes.c) Display timestamps (mtime, ctime, atime) of a file
+* [`getfilets`](c_src/getfilets.c) Display timestamps (mtime, ctime, atime) of a file
 * [`herewego`](c_src/herewego.c) . Sleep Until a Nice Round Time and Tell the Time
 * [`linets`](c_src/linets.c) ..... Add timestamp to every line of text data
 * [`ptw`](c_src/ptw.c) ........... A command wrapper to prevent a command from full-buffering (alternative of [stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)
