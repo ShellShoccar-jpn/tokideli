@@ -43,7 +43,7 @@ To short, all you have to do is to type the following commands.
 
 ```sh:
 $ git clone https://github.com/ShellShoccar-jpn/tokideli.git
-$ su -
+$ su
 # tokideli/INSTALL.sh /usr/local/tokideli
 ```
 
