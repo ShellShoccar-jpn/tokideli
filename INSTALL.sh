@@ -38,7 +38,7 @@ export UNIX_STD=2003     # to make HP-UX comply with POSIX
 print_usage_and_exit () {
   cat <<-USAGE 1>&2
 	Usage   : ${0##*/} directory
-	Version : 2022-06-26 04:45:48 JST
+	Version : 2022-06-26 12:24:36 JST
 	USAGE
   exit 1
 }
@@ -128,13 +128,16 @@ else
 fi
 
 # === Copy the commands ==============================================
-[ -d "$Homedir/bin" ] || {
-  error_exit 1 "$Homedir/bin: Source directory doesn't exist"
-}
-cp -pr "$Homedir/bin" "$Dir_inst" || {
-  error_exit 1 "$Homedir/bin: Failed to copy to the install directory"
-}
-chmod 755 "$Dir_inst"/*
+case $(cd "$Dir_inst" && pwd) in "$Homedir") s=1;; *) s=0;; esac
+for dir in 755:bin 644:manual; do
+  [ -d "$Homedir/${dir#*:}" ] || continue
+  case $s in 0)
+    cp -pr "$Homedir/${dir#*:}" "$Dir_inst" || {
+      error_exit 1 "$Homedir/bin: Failed to copy to the install directory"
+    }
+  ;; esac
+  chmod ${dir%%:*} "$Dir_inst/${dir#*:}/"*
+done
 
 # === Display the end of installation ================================
 cat <<-MESSAGE
