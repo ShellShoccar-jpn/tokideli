@@ -21,7 +21,7 @@
 #
 # How to compile : cc -O3 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-06-26
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-06-27
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -74,7 +74,7 @@ void print_usage_and_exit(void) {
     "          * The latter format is set by -l option.\n"
     "Retuen  : Return 0 only when timestamps of all files were able to be\n"
     "          gotten. \n"
-    "Version : 2022-06-26 05:14:48 JST\n"
+    "Version : 2022-06-27 00:37:31 JST\n"
     "          (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -153,7 +153,7 @@ argc -= optind;
 argv += optind;
 
 /*--- print the usage if no filename has given ---------------------*/
-if (argc < 2) { print_usage_and_exit(); }
+if (argc < 1) { print_usage_and_exit(); }
 
 /*--- Warn if use "-9" option on nanosecond timestamp non-supported OS */
 #ifndef st_atime
