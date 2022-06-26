@@ -66,6 +66,6 @@ $ tokideli/INSTALLIN.sh $HOME/tokideli
 
 製作・秘密結社シェルショッカー日本支部
 
-ただし私達は、このリポジトリーで公開しているプログラム・ドキュメント類の一切の権利を放棄します。どうしても、ライセンスを示してくださいということであれば、[CC0](https://creativecommons.org/share-your-work/public-domain/cc0) またあ [the Unlicense](https://unlicense.org/) をお使いください。
+ただし私達は、このリポジトリーで公開しているプログラム・ドキュメント類の一切の権利を放棄します。どうしても、ライセンスを示してくださいということであれば、[CC0](https://creativecommons.org/share-your-work/public-domain/cc0) または [the Unlicense](https://unlicense.org/) をお使いください。
 
 とにかく、ご自由にお使いください。
