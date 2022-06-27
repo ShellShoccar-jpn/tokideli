@@ -55,13 +55,14 @@ According to C language specifications, programs whose STDOUT are connected to a
 
 ### Pseudo terminal (PTY) Is Good for the Purpose
 
-The `ptw` command we released is a wrapper command to pretend to be not a pipeline but a terminal and cheat the target command. The steps to work when you execute `ptw TARGET_COMMAND ARG1 ARG2 ...` is the following:
+The `ptw` command we released is a wrapper command to pretend to be a terminal (neither a pipeline nor a file) and cheat the target command. The steps to work when you execute `ptw TARGET_COMMAND ARG1 ARG2 ...` is the following:
 
 1. `ptw` starts instead of TARGET_COMMAND.
-1. `ptw` generates a pseudo terminal and connects it to the actual STDOUT endpoint.
-1. `ptw` make a child process and give the pseudo endpoint to the STDOUT of the process.
-1. `ptw` attaches `TARGET_COMMAND ARG1 ARG ...` to the process. Then, the TARGET_COMMAND sets the buffering mode to the line-buffering according to the C specifications.
-1. `ptw` transfers data to the actual endpoint whenever the TARGET_COMMAND outputs to the pseudo endpoint.
+1. `ptw` creates a PTY.
+1. `ptw` also creates a child process with the fork() function. So, the parent and the child can share the PTY each other.
+1. The child replaces the STDOUT endpoint with the PTY's descriptor.
+1. The child finally changes itself to `TARGET_COMMAND ARG1 ARG ...` with the exec() function. By this trick, the TARGET_COMMAND thinks being connected to a terminal and unconsciously sends data to the PTY instead of the actual STDOUT.
+1. The parent enters the infinite loop to receive the data the TARGET_COMMAND sent via the PTY. Then, the parent transfers them to the actual STDOUT whenever new data come.
 
 So you can solve the problem by typing the following one-liner.
 
@@ -96,12 +97,13 @@ There's no doubt that `ptw` effectiveness is stronger than `stdbuf`. However, th
 
 `mawk` is one of imprementations of AWK. Some versions of Raspberry Pi OS and Ubuntu adopt it as a default AWK. `mawk` also manages the buffering mode itself and overwrites the preset mode no matter what program sets the mode in advance.
 
-There is no choice but to use the `-W interactive` option instead of `ptw` command if the AWK you are using could be mawk. So we suggest you write the following paragraph at the beginning of your shell script.
+There is no choice but to use the `-W interactive` option instead of `ptw` command if the AWK you are using could be mawk. So we suggest you write the following paragraph at the beginning of your shell script instead of adding the "ptw" word for every AWK.
 
 ```sh:
 # (at the beginning of your shell script)
 case $(gawk -W interactive 'BEGIN{print}' 2>&1 >/dev/null) in
   '') alias awk='awk -W interactive';;
+   *) alias awk='ptw awk'           ;;
 esac
 ```
 
