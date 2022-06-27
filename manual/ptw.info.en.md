@@ -130,4 +130,4 @@ For instance, some implementations of the grep commands color their output text 
 $ seq 1 100 | ptw grep --color=auto 1 | cat
 ```
 
-However, you are rarely troubled by options like `--color = auto`. This is because these options are usually defined by the UNIX shell alias. And external commands, including `ptw`, cannot recognize the alias definitions.
+However, you are rarely troubled by options like `--color = auto`. That is because these options are usually defined by the UNIX shell alias. And external commands, including `ptw`, cannot recognize the alias definitions.
