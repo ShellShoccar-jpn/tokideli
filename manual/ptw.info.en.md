@@ -61,7 +61,7 @@ The `ptw` command we released is a wrapper command to pretend to be a terminal (
 1. `ptw` creates a PTY.
 1. `ptw` also creates a child process with the fork() function. So, the parent and the child can share the PTY each other.
 1. The child replaces the STDOUT endpoint with the PTY's descriptor.
-1. The child finally changes itself to `TARGET_COMMAND ARG1 ARG ...` with the exec() function. By this trick, the TARGET_COMMAND thinks being connected to a terminal and unconsciously sends data to the PTY instead of the actual STDOUT.
+1. The child finally changes itself to `TARGET_COMMAND ARG1 ARG ...` with the exec() function. By this trick, the TARGET_COMMAND thinks being connected to a terminal and changes the buffering mode. And it unconsciously sends data to the PTY instead of the actual STDOUT.
 1. The parent enters the infinite loop to receive the data the TARGET_COMMAND sent via the PTY. Then, the parent transfers them to the actual STDOUT whenever new data come.
 
 So you can solve the problem by typing the following one-liner.
