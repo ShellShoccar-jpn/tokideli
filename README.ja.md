@@ -37,6 +37,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 * [`ptw`](c_src/ptw.c) ........... フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.ja.md)）
 * [`sleep`](c_src/sleep.c) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
 * [`tscat`](c_src/tscat.c) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
+* [`typeliner`](c_src/typeliner.c) ひとまとまりのキータイプ文字列を1行にする
 * [`valve`](c_src/valve.c) ....... 1バイトごと、または1行ごとにデータを一定間隔で出力する
 
 各コマンドの使用法を見たい場合は、各コマンドをビルドした上で `--help` オプションを付けて実行してください。

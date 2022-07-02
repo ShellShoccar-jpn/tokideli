@@ -35,6 +35,7 @@ Several more commands are available.
 * [`ptw`](c_src/ptw.c) ........... A command wrapper to prevent a command from full-buffering (alternative of [stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation), see [this](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.en.md) for details)
 * [`sleep`](c_src/sleep.c) ....... Sleep command which supports sleeping during less than a second (POSIX compliant)
 * [`tscat`](c_src/tscat.c) ....... Output each line at the data and time which is written in the top of the line
+* [`typeliner`](c_src/typeliner.c) Make a Line of a Bunch of Key Types
 * [`valve`](c_src/valve.c) ....... Output each byte/line at the specified interval
 
 To see the usages for the commands, build the command and run them with the option `--help`.
