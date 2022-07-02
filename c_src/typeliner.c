@@ -2,8 +2,9 @@
 #
 # TYPELINER - Make a Line of a Bunch of Key Types
 #
-# USAGE   : typeliner [-d]
-# Options : -d ... Ignore [CTRL]+[D]. It means that the EOT (0x04) will
+# USAGE   : typeliner [options]
+# Options : -1 ... Get only one bunch and exit immediately.
+#           -d ... Ignore [CTRL]+[D]. It means that the EOT (0x04) will
 #                  be treated as a ordinal character.
 # Retuen  : 0 only when finished successfully
 #
@@ -50,10 +51,11 @@ int            giVerbose;         /* greater number, more verbosely */
 void print_usage_and_exit(void) {
   fprintf(stderr,
     "USAGE   : %s [options]\n"
-    "Options : -d ... Ignore [CTRL]+[D]. It means that the EOT (0x04) will\n"
+    "Options : -1 ... Get only one bunch and exit immediately.\n"
+    "          -d ... Ignore [CTRL]+[D]. It means that the EOT (0x04) will\n"
     "                 be treated as a ordinal character.\n"
     "Retuen  : 0 only when finished successfully\n"
-    "Version : 2022-07-03 03:38:57 JST\n"
+    "Version : 2022-07-03 04:33:35 JST\n"
     "          (POSIX C language with \"POSIX centric\" programming)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -98,7 +100,7 @@ void exit_trap(void) {
 /*=== Initialization ===============================================*/
 int main(int argc, char *argv[]) {
 /*--- Variables ----------------------------------------------------*/
-int            iIgnCtrlD;
+int            iIgnCtrlD, i1bunch;
 int            iSize_r, iSize_w, iOffset, iRemain, i;
 int            iLast;
 const char     szLf[1] = {'\n'};
@@ -113,9 +115,11 @@ for (i=0; *(gpszCmdname+i)!='\0'; i++) {
 /*=== Parse arguments ==============================================*/
 /*--- Set default parameters of the arguments ----------------------*/
 iIgnCtrlD = 0;
+i1bunch   = 0;
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "dv")) != -1) {
+while ((i=getopt(argc, argv, "1dv")) != -1) {
   switch (i) {
+    case '1': i1bunch   = 1;  break;
     case 'd': iIgnCtrlD = 1;  break;
     case 'v': giVerbose++;    break;
     default : print_usage_and_exit();
@@ -166,7 +170,7 @@ if (isatty(STDIN_FILENO) == 1) {
 }
 
 /*=== Main loop ====================================================*/
-iLast = 0;
+iLast = i1bunch;
 while ((iSize_r=(int)read(STDIN_FILENO,gszBuf,BLKSIZE+1))>0) {
   /*--- If EOT follows the data, make this turn last ---------------*/
   if ((!iIgnCtrlD) && (gszBuf[iSize_r-1]==0x04)) {iLast=1; iSize_r--;}
