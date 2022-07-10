@@ -2,7 +2,7 @@
 
 We will deliver the "TOKI" (means "Timing" in Japanese) management command to your UNIX computer!
 
-（日本語版は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/README.ja.md)）
+（日本語版は[こちら](README.ja.md)）
 
 ## What is this?
 

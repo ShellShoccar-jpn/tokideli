@@ -1,8 +1,8 @@
 # トキデリ
 
-あなたのUNIXコンピューターに高品質な「時」をお届け！
+あなたのUNIXコンピューターに高品質な「時」をデリバリー！
 
-(English version is [here](https://github.com/ShellShoccar-jpn/tokideli/blob/main/README.en.md))
+(English version is [here](README.en.md))
 
 ## これは何？
 
