@@ -21,7 +21,7 @@
 #             =forcible ... Line-buffered mode or exit if impossible
 #
 # Designed originally by Nobuaki Tounaka
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-02-08
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-07-18
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -64,7 +64,7 @@ print_usage_and_exit() {
 	Environs: LINE_BUFFERED
 	            =yes ........ Line-buffered mode if possible
 	            =forcible ... Line-buffered mode or exit if impossible
-	Version : 2022-02-08 13:31:56 JST
+	Version : 2022-07-18 01:13:48 JST
 	          Open usp Tukubai (POSIX Bourne Shell/POSIX commands)
 	USAGE
   exit 1
@@ -126,6 +126,7 @@ for arg in "$@"; do
   opt_part=0
   if [ $i -eq $# ] && [ $directmode -ne 0 ]; then
     directstr=$arg
+    fldnums=1
     break
   fi
   # separate arg to arg1, arg2
@@ -166,6 +167,9 @@ done
 case "$fldnums" in '') print_usage_and_exit;; esac
 if [ $directmode -ne 0 ]; then
   case "$directstr" in '') print_usage_and_exit;; esac
+  printf '%s\n' "$directstr" | grep -Eq '^[0-9]+(\.[0-9]+)?$' || {
+    error_exit 1 "$directstr"': Invalid date and time'
+  }
   file=''
 elif [ "_$file" = '_'                ] ||
      [ "_$file" = '_-'               ] ||
