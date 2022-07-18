@@ -2,7 +2,7 @@
 #
 # TSCAT - A "cat" Command Which Can Reprodude the Timing of Flow
 #
-# USAGE   : tscat [-c|-e|-z] [-Z] [-u] [-y] [-p n] [file ...]
+# USAGE   : tscat [-c|-e|-z] [-Z] [-u] [-y] [-p n] [file [...]]
 # Args    : file ........ Filepath to be send ("-" means STDIN)
 #                         The file MUST be a textfile and MUST have
 #                         a timestamp at the first field to make the
@@ -57,7 +57,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-07-10
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-07-19
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -130,9 +130,9 @@ struct timespec gtsZero;      /* The zero-point time                         */
 void print_usage_and_exit(void) {
   fprintf(stderr,
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
-    "USAGE   : %s [-c|-e|-z] [-Z] [-u] [-y] [-p n] [file ...]\n"
+    "USAGE   : %s [-c|-e|-z] [-Z] [-u] [-y] [-p n] [file [...]]\n"
 #else
-    "USAGE   : %s [-c|-e|-z] [-Z] [-u] [-y] [file ...]\n"
+    "USAGE   : %s [-c|-e|-z] [-Z] [-u] [-y] [file [...]]\n"
 #endif
     "Args    : file ........ Filepath to be send (\"-\" means STDIN)\n"
     "                        The file MUST be a textfile and MUST have\n"
@@ -184,7 +184,7 @@ void print_usage_and_exit(void) {
     "                        Larger numbers maybe require a privileged user,\n"
     "                        but if failed, it will try the smaller numbers.\n"
 #endif
-    "Version : 2022-07-10 23:27:04 JST\n"
+    "Version : 2022-07-19 04:33:38 JST\n"
     "          (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
