@@ -6,7 +6,9 @@ sleep - 小数桁指定対応版sleepコマンド
 
 ## 書式
 
+```sh:
 sleep seconds[.ddddddddd]
+```
 
 ## 説明
 

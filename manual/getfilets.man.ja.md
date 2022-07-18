@@ -6,7 +6,9 @@ getfilets - ファイルのタイムスタンプ（atime、mtime、ctime）を�
 
 ## 書式
 
+```sh:
 getftimes [options] file [file ...]
+```
 
 ## 説明
 

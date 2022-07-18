@@ -6,8 +6,10 @@ calclock - カレンダー時間とUNIX時間の相互変換
 
 ## 書式
 
+```sh:
 calclock [+[n]h] [-r] f1 [f2 [...]] file
 calclock -d[r] string
+```
 
 ## 説明
 
