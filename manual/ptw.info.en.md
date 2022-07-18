@@ -101,7 +101,7 @@ There is no choice but to use the `-W interactive` option instead of `ptw` comma
 
 ```sh:
 # (at the beginning of your shell script)
-case $(gawk -W interactive 'BEGIN{print}' 2>&1 >/dev/null) in
+case $(awk -W interactive 'BEGIN{print}' 2>&1 >/dev/null) in
   '') alias awk='awk -W interactive';;
    *) alias awk='ptw awk'           ;;
 esac
