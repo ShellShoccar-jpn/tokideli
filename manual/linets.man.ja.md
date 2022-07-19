@@ -104,7 +104,7 @@ TIMESTAMP n.ddddddddd foo bar 123
 
 ## 使用例
 
-ping(1)の出力に、JST-9タイムゾーンによるカレンダー時間、かつミリ秒単位までのタイムスタンプを付ける。
+ping(8)の出力に、JST-9タイムゾーンによるカレンダー時間、かつミリ秒単位までのタイムスタンプを付ける。
 
 ```sh:
 $ ping example.com | linets -3
