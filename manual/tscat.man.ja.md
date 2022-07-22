@@ -103,7 +103,7 @@ world!
 ```sh:
 $ typeliner -e | linets -3Z > mytyping.txt
 Hello⏎          ← コマンドを実行したら
-world!⏎         ← このようにタイプした後、[Ctrl]+[d]を押す
+world!⏎         ← このようにタイプした後、[Ctrl]+[D]を押す
 ```
 
 詳細は、[typeliner(1)](typeliner.man.ja.md)コマンドのマニュアルを参照してください。
@@ -130,7 +130,7 @@ $ tscat -Z ping_result.log
 ```sh:
 $ export TZ=JST-9
 $ typeliner -e | linets -c3 > mytyping.txt
-（文字をタイプした後、最後に[Ctrl]+[d]を押す）
+（文字をタイプした後、最後に[Ctrl]+[D]を押す）
 $ tscat -cy mytyping.txt
 （先程のタイピングの様子が画面に再現される）
 ```
