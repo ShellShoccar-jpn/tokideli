@@ -139,10 +139,12 @@ $ tscat -cy mytyping.txt
 
 コマンド自体はナノ秒単位までのタイムスタンプ指定ができますが、実際にその精度で再現できるとは限りません。どれくらい高精度な再現ができるかはOSの状態やハードウェアの性能に依存します。
 
+-pオプションを使えば精度を上げられるかもしれません。
+
 ## 規格への準拠
 
 このコマンドのソースコードはC99、IEEE Std 1003.1-2001（“POSIX.1”）に準拠させてあります。
 
 ## 関連項目
 
-[tscat(1)](tscat.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)
+[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)

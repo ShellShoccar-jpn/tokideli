@@ -2,7 +2,7 @@
 
 ## 名前
 
-getfilets - ファイルのタイムスタンプ（atime、mtime、ctime）を取得する
+getfilets - ファイルのタイムスタンプ（atime、mtime、ctime）を取得
 
 ## 書式
 
