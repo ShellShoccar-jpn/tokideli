@@ -81,7 +81,7 @@ confirm=$(typeliner -1e)
 ```sh:
 $ typeliner -e | linets -3 > mytyping.txt
 （文字をタイプした後、最後に[Ctrl]+[D]を押す）
-$ tscat -y mytyping.txt
+$ tscat -yZ mytyping.txt
 （先程のタイピングの様子が画面に再現される）
 ```
 
