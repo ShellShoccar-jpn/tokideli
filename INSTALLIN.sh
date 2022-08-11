@@ -8,7 +8,7 @@
 # USAGE   : INSTALLIN.sh directory
 # Ret     : $?=0 (when succeeded)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-06-26
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-08-12
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -16,7 +16,7 @@
 # about by the major licenses.
 #
 # The latest version is distributed at the following page.
-# https://github.com/ShellShoccar-jpn/misc-tools
+# https://github.com/ShellShoccar-jpn/tokideli
 #
 ######################################################################
 
@@ -38,7 +38,7 @@ export UNIX_STD=2003     # to make HP-UX comply with POSIX
 print_usage_and_exit () {
   cat <<-USAGE 1>&2
 	Usage   : ${0##*/} directory
-	Version : 2022-06-26 12:24:36 JST
+	Version : 2022-08-12 03:47:27 JST
 	USAGE
   exit 1
 }
@@ -81,6 +81,7 @@ case $1 in
   ../*) Dir_inst=$1    ;;
   *)    Dir_inst="./$1";;
 esac
+Dir_inst=${Dir_inst%/} && case $Dir_inst in '') Dir_inst='/';; esac
 
 
 ######################################################################
@@ -115,10 +116,10 @@ echo
 
 # === Make sure of the existence of the install directory ============
 if   [ -d "$Dir_inst" ]; then
-  touch "$Dir_inst/.check" 2>/dev/null || {
+  touch "${Dir_inst%/}/.check" 2>/dev/null || {
     error_exit 1 "$1: No priviege to write a file into the directory"
   }
-  rm -f "$1/.check"
+  rm -f "${Dir_inst%/}/.check"
 elif [ -e "$Dir_inst" ]; then
   error_exit 1 "$1: Another file having the same name already exists"
 else
@@ -136,7 +137,7 @@ for dir in 755:bin 644:manual; do
       error_exit 1 "$Homedir/bin: Failed to copy to the install directory"
     }
   ;; esac
-  chmod ${dir%%:*} "$Dir_inst/${dir#*:}/"*
+  chmod ${dir%%:*} "${Dir_inst%/}/${dir#*:}/"*
 done
 
 # === Display the end of installation ================================
@@ -158,11 +159,53 @@ echo
 echo '===== STEP (3/3). Add the additional path into "PATH" ====='
 echo
 
+# === Make sure user's intention if the user is root =================
+case $(whoami) in
+  'root')
+     ruser=$(ps -Ao ruser,ppid,pid                                       |
+             tail -n +2                                                  |
+             awk -v mypid=$$ '                                           #
+               {nr2ru[NR]=$1; nr2pp[NR]=$2; nr2pi[NR]=$3; pi2nr[$3]=NR;} #
+               END {ruser="";                                            #
+                    pi=mypid;                                            #
+                    while (1) {                                          #
+                      if (! (pi in pi2nr)) {break;}                      #
+                      nr=pi2nr[pi];                                      #
+                      if (! (nr in nr2ru)) {break;}                      #
+                      s =nr2ru[nr];                                      #
+                      if (s != "root"    ) {ruser=s; break;}             #
+                      if (! (nr in nr2pp)) {break;}                      #
+                      pi=nr2pp[nr];                                      #
+                    }                                                    #
+                    print ruser;                                       }') ;;
+  *) ruser=''                                                              ;;
+esac
+case $ruser in '') :;; *)
+  cat <<-MESSAGE
+	You are root now. However, it looks like your original ID is "$ruser"
+	and you execute this program with the su or sudo command. So, I have
+	to ask you a question.
+	
+	Which user's profile do you want to write the additional PATH setting
+	into?
+	  1. "$ruser" (I suppose the answer you want is probably this one.)
+	  2. "root"
+	MESSAGE
+  while :; do
+    printf 'Choose one ([1]/2): '; read answer
+    case $answer in
+      ''|'1') :       ; break;;
+         '2') ruser=''; break;;
+    esac
+  done
+;; esac
+
 # === Set the path ===================================================
-case $Dir_inst/bin in ${HOME}*)
+case $ruser in '') :;; *) eval HOME=~$ruser;; esac
+case ${Dir_inst%/}/bin in ${HOME}*)
   Dir_inst="\$HOME${Dir_inst#"$HOME"}"
 ;; esac
-set -- "$Dir_inst/bin"
+set -- "${Dir_inst%/}/bin"
 
 # === Generate the additional path string ============================
 paths=''
@@ -214,6 +257,7 @@ case ${SHELL##*/} in
          startrss="$startrss \$HOME/.profile"
          ;;
 esac
+case "$(whoami)$ruser" in 'root') prompt='#';; esac
 yourstartrs=''
 for startrs in $startrss; do
   eval actualstartrs=\"$startrs\" # "
@@ -280,13 +324,19 @@ case $answer in Y|y|[Yy][Ee][Ss])
   #    esac                                                              |
   #    awk 'BEGIN{n=0}; {n=$1}; END{print (n>0)?n:"$";}'                 )
   n='$'
+  [ -f "$actualstartrs" ] || touch "$actualstartrs"
   grep ^ "$actualstartrs" |
   sed -n "1,${n}p"        >  "${actualstartrs%/*}/${actualstartrs##*/}.new"
   printf '%s\n' "$line_to_be_inserted" >> "${actualstartrs%/*}/${actualstartrs##*/}.new"
   grep ^ "$actualstartrs" |
   sed    "1,${n}d"        >> "${actualstartrs%/*}/${actualstartrs##*/}.new"
   mv "$actualstartrs" "${actualstartrs%/*}/${actualstartrs##*/}${backupsuffix}" &&
-  mv "${actualstartrs%/*}/${actualstartrs##*/}.new" "$actualstartrs"
+  mv "${actualstartrs%/*}/${actualstartrs##*/}.new" "$actualstartrs"            &&
+  case "$ruser" in '') :;; *)
+    s=$(id -gn "$ruser")
+    chown "$ruser:$s" "$actualstartrs"
+    chown "$ruser:$s" "${actualstartrs%/*}/${actualstartrs##*/}${backupsuffix}"
+  ;; esac
 
   cat <<-MESSAGE
 
@@ -305,7 +355,14 @@ case $answer in Y|y|[Yy][Ee][Ss])
   echo 'Okay, do them yourself.'
 ;; esac
 echo
-echo '*** All steps Finished. Enjoy! ***'
+cat <<-MESSAGE
+	The file configuration finished. But, type the following command manually
+	or restart the current terminal to enable the new PATH setting immediately.
+	-----
+	$prompt $line_to_be_inserted
+	-----
+	MESSAGE
+echo '*** Enjoy! ***'
 
 
 ######################################################################
