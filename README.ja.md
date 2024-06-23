@@ -35,6 +35,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 * [`herewego`](c_src/herewego.c) . キリのいい時刻までsleepし、さらに目覚めた時刻を返す
 * [`linets`](c_src/linets.c) ..... 到来したテキストデータの各行の行頭に到来時刻付加する
 * [`ptw`](c_src/ptw.c) ........... フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.ja.md)）
+* [`relval`](c_src/relval.c) ..... 逃がし弁のようにして、行の流速を一定以下に保つ
 * [`sleep`](c_src/sleep.c) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
 * [`tscat`](c_src/tscat.c) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
 * [`typeliner`](c_src/typeliner.c) ひとまとまりのキータイプ文字列を1行にする

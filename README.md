@@ -33,6 +33,7 @@ Several more commands are available.
 * [`herewego`](c_src/herewego.c) . Sleep Until a Nice Round Time and Tell the Time
 * [`linets`](c_src/linets.c) ..... Add timestamp to every line of text data
 * [`ptw`](c_src/ptw.c) ........... A command wrapper to prevent a command from full-buffering (alternative of [stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation), see [this](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.en.md) for details)
+* [`relval`](c_src/relval.c) ..... Limit the Flow Rate of the UNIX Pipeline Like a Relief Valve
 * [`sleep`](c_src/sleep.c) ....... Sleep command which supports sleeping during less than a second (POSIX compliant)
 * [`tscat`](c_src/tscat.c) ....... Output each line at the data and time which is written in the top of the line
 * [`typeliner`](c_src/typeliner.c) Make a Line of a Bunch of Key Types

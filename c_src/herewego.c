@@ -108,7 +108,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -o __CMDNAME__ __SRCNAME__
 #
-# Written Shell-Shoccar Japan (@shellshoccarjpn) on 2024-06-19
+# Written Shell-Shoccar Japan (@shellshoccarjpn) on 2024-06-23
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -292,7 +292,7 @@ void print_usage_and_exit(void) {
 #endif
     "Retuen  : Return 0 only when finished successfully\n"
     "\n"
-    "Version : 2024-06-19 00:09:37 JST\n"
+    "Version : 2024-06-23 13:28:01 JST\n"
     "          (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
