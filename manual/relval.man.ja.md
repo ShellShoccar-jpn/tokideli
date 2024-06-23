@@ -160,4 +160,4 @@ $ seq -f '%.3f' 0 0.1 9.9 | awk '{print $1,NR}' | tscat -kz | (relval -zd 2 2/1s
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[tscat(1)](linets.man.ja.md)、
+[linets(1)](linets.man.ja.md)、[tscat(1)](linets.man.ja.md)
