@@ -37,7 +37,7 @@ Several more commands are available.
 * [`sleep`](c_src/sleep.c) ....... Sleep command which supports sleeping during less than a second (POSIX compliant)
 * [`tscat`](c_src/tscat.c) ....... Output each line at the data and time which is written in the top of the line
 * [`typeliner`](c_src/typeliner.c) Make a Line of a Bunch of Key Types
-* [`valve`](c_src/valve.c) ....... Output each byte/line at the specified interval
+* [`valve`](c_src/valve.c) ....... Adjust the Data Transfer Rate in the UNIX Pipeline
 
 To see the usages for the commands, build the command and run them with the option `--help`.
 

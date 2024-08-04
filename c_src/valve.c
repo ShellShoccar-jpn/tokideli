@@ -1,6 +1,6 @@
 /*####################################################################
 #
-# VALVE - Adjust the UNIX Pipe Streaming Speed
+# VALVE - Adjust the Data Transfer Rate in the UNIX Pipeline
 #
 # USAGE   : valve [-c|-l] [-r|-s] [-p n] periodictime [file [...]]
 #           valve [-c|-l] [-r|-s] [-p n] controlfile [file [...]]
@@ -12,7 +12,7 @@
 #                         like '100ms'. Available units are 's', 'ms',
 #                         'us', 'ns'.
 #                         You can also specify it by the units/words.
-#                          - speed  : '[kMG]bps' (regards as 1chr= 8bit)
+#                          - rate   : '[kMG]bps' (regards as 1chr= 8bit)
 #                                     'cps' (regards as 1chr=10bit)
 #                          - output : '0%'   (completely shut the value)
 #                                     '100%' (completely open the value)
@@ -49,11 +49,11 @@
 #                         -s option will be disabled by this option.
 #           -s .......... Strict mode
 #                         Recovering the lost time causes the maximum
-#                         instantaneous speed to be exeeded. It maybe
-#                         affect badly for devices which have little
-#                         buffer. So, this mode makes this command keep
-#                         strictly the maximum instantaneous speed limit
-#                         decided by periodictime.
+#                         instantaneous data-transfer rate to be exeeded.
+#                         It maybe affect badly for devices which have
+#                         little buffer. So, this mode makes this command
+#                         keep strictly the maximum instantaneous data-
+#                         transfer rate limit decided by periodictime.
 #                         -r option will be disabled by this option.
 #           -p n ........ Process priority setting [0-3] (if possible)
 #                          0: Normal process
@@ -76,7 +76,7 @@
 #             follows.
 #               $ gcc -DNOTTY -o valve valve.c
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2024-06-23
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2024-08-04
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -179,7 +179,7 @@ void print_usage_and_exit(void) {
     "                        like '100ms'. Available units are 's', 'ms',\n"
     "                        'us', 'ns'.\n"
     "                        You can also specify it by the units/words.\n"
-    "                         - speed  : '[kMG]bps' (regards as 1chr= 8bit)\n"
+    "                         - rate   : '[kMG]bps' (regards as 1chr= 8bit)\n"
     "                                    'cps' (regards as 1chr=10bit)\n"
     "                         - output : '0%%'   (completely shut the value)\n"
     "                                    '100%%' (completely open the value)\n"
@@ -219,11 +219,11 @@ void print_usage_and_exit(void) {
     "                        -s option will be disabled by this option.\n"
     "          -s .......... Strict mode\n"
     "                        Recovering the lost time causes the maximum\n"
-    "                        instantaneous speed to be exeeded. It maybe\n"
-    "                        affect badly for devices which have little\n"
-    "                        buffer. So, this mode makes this command keep\n"
-    "                        strictly the maximum instantaneous speed limit\n"
-    "                        decided by periodictime.\n"
+    "                        instantaneous data-transfer rate to be exeeded.\n"
+    "                        It maybe affect badly for devices which have\n"
+    "                        little buffer. So, this mode makes this command\n"
+    "                        keep strictly the maximum instantaneous data-\n"
+    "                        transfer rate limit decided by periodictime.\n"
     "                        -r option will be disabled by this option.\n"
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
     "          -p n ........ Process priority setting [0-3] (if possible)\n"
@@ -235,7 +235,7 @@ void print_usage_and_exit(void) {
     "                        Larger numbers maybe require a privileged user,\n"
     "                        but if failed, it will try the smaller numbers.\n"
 #endif
-    "Version : 2024-06-23 13:28:01 JST\n"
+    "Version : 2024-08-04 22:16:24 JST\n"
     "          (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
