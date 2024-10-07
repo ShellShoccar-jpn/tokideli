@@ -30,16 +30,17 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 
 これも含めて、いくつかのコマンドを用意しました。
 
-* [`calclock`](bin/calclock) ..... カレンダー時間（年月日時分秒）とUNIX時間を相互変換する
-* [`getfilets`](c_src/getfilets.c) ファイルの mtime、ctime、atime を表示する
-* [`herewego`](c_src/herewego.c) . キリのいい時刻までsleepし、さらに目覚めた時刻を返す
-* [`linets`](c_src/linets.c) ..... 到来したテキストデータの各行の行頭に到来時刻付加する
-* [`ptw`](c_src/ptw.c) ........... フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.ja.md)）
-* [`relval`](c_src/relval.c) ..... 逃し弁のようにして、行の転送レートを一定以下に保つ
-* [`sleep`](c_src/sleep.c) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
-* [`tscat`](c_src/tscat.c) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
-* [`typeliner`](c_src/typeliner.c) ひとまとまりのキータイプ文字列を1行にする
-* [`valve`](c_src/valve.c) ....... 1バイトごと、または1行ごとにデータを一定間隔で出力する
+* [`calclock`](manual/calclock.man.ja.md) . カレンダー時間（年月日時分秒）とUNIX時間を相互変換する
+* [`getfilets`](manual/getfilets.man.ja.md) ファイルの mtime、ctime、atime を表示する
+* [`herewego`](manual/herewego.man.ja.md) . キリのいい時刻までsleepし、さらに目覚めた時刻を返す
+* [`linets`](manual/linets.man.ja.md) ..... 到来したテキストデータの各行の行頭に到来時刻付加する
+* [`ptw`](manual/ptw.man.ja.md) ........... フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.ja.md)）
+* [`oobleck`](manual/oobleck.man.ja.md) ... 一定時間内に次行が到来しない場合のみ、現在保持中の行を出力する
+* [`relval`](manual/relval.man.ja.md) ..... 逃し弁のようにして、行の転送レートを一定以下に保つ
+* [`sleep`](manual/sleep.man.ja.md) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
+* [`tscat`](manual/tscat.man.ja.md) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
+* [`typeliner`](manual/typeliner.man.ja.md) ひとまとまりのキータイプ文字列を1行にする
+* [`valve`](manual/valve.man.ja.md) ....... 1バイトごと、または1行ごとにデータを一定間隔で出力する
 
 各コマンドの使用法を見たい場合は、各コマンドをビルドした上で `--help` オプションを付けて実行してください。
 
