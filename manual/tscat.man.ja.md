@@ -54,6 +54,7 @@ cat(1)が与えられたファイルをできる限り速く標準出力に書�
   * `n.ddddddddd`
 * -I: 拡張ISO 8601形式
   * `YYYY-MM-DDThh:mm:ss,ddddddddd{+|-}hh:mm`
+  * `YYYY-MM-DDThh:mm:ss,dddddddddZ`
 * -z: データ作成開始時刻からの経過秒数
   * `N.ddddddddd`
 
