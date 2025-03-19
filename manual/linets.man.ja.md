@@ -7,7 +7,7 @@ linets - 行頭に各行の読み込みを挿入して出力
 ## 書式
 
 ```sh:
-linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-du] [file [...]]
+linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1du] [file [...]]
 ```
 
 ## 説明
@@ -90,6 +90,10 @@ n.ddddddddd foo bar 123
 
 従って1行目のタイムスタンプは必ず0になります。有効桁数内において0になるのではなく、厳密に0であるため、小数部は表示しません。
 
+### -1
+
+コマンド起動時、標準入力からのデータとは関係無の無い1行（LF）を出力します。このオプションの目的は、AWKやシェルスクリプトからこのコマンドと双方向パイプを構築する際、デッドロックが起こるのを防ぐためです。（[使用例](#使用例)の項にあるAWKスクリプトでの使用例を参照）
+
 ### -d
 
 1列目のタイムスタンプの後に2列目として、前の行の到来事項からの経過秒数を挿入します。したがって、このオプションを用いた場合、元々の文字列は3列目に表示されます。
@@ -130,6 +134,30 @@ $ while sleep 1; do echo; done | linets -6d
 
 ```sh:
 $ while sleep 1; do echo; done | TZ='America/Los_Angeles' linets -6d
+```
+
+AWKスクリプトの中で、外部コマンドとしてのdate(1)を使用するよりもより軽量に、そして精密な時刻を取得する。（この使用方法においては、-1オプションと名前付きパイプファイルが一つ必要）
+
+```awk:
+BEGIN {
+  cmd_gettime="linets -1c3 named_pipe"; # format is "YYYYMMDDhhmmss.nnn"
+  cmd_gettime | getline dummy;          # preparation to get the time
+
+  system("sleep 1");
+
+  print "" > "named_pipe"; fflush();
+  cmd_gettime | getline t; t=substr(t,1,length(t)-1);
+  print "Current time: " t;
+
+  system("sleep 1");
+
+  print "" > "named_pipe"; fflush();
+  cmd_gettime | getline t; t=substr(t,1,length(t)-1);
+  print "Current time: " t;
+
+  close("named_pipe");
+  close(cmd_gettime);
+}
 ```
 
 ## バグ
