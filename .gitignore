@@ -2,8 +2,13 @@
 bin/getfilets
 bin/herewego
 bin/linets
+bin/oobleck
 bin/ptw
+bin/qvalve
+bin/relval
 bin/sleep
 bin/tscat
 bin/tshead
+bin/typeliner
 bin/valve
+manual.book
