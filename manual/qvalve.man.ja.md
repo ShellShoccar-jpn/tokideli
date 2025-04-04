@@ -164,6 +164,34 @@ Thu Apr  3           ←qvalveは起動したままになる（[Ctrl]+[C]で終�
   * controlfileを用いる。
   * そのcontrolfileをキャラクタースペシャルファイルまたは名前付きパイプとする。
 
+### 通常ファイルをcontrolfileとする場合の留意点
+
+通常ファイルをcontrolfileとして利用している場合、controlfileに新たな量（あるいはコマンド）が書き込まれたかどうかの判定は文字列が変更されたかどうかで判断します。したがって、同じ量を追加出力したい場合には工夫が必要です。
+
+例えば、1キロバイトを出力して、さらに1キロバイト、……を出力したい場合、controlfileに次のように書き込んでもその意図は伝わりません。
+
+```sh:
+$ echo +1k > controlfile⏎
+$ echo +1k > controlfile⏎
+$ echo +1k > controlfile⏎
+$ echo +1k > controlfile⏎
+$ echo +1k > controlfile⏎
+    :
+```
+
+正しく伝えるには、同じ量を意味しつつも文字列として異なるものを書き込んでください。下記にその例を示します。
+
+```sh:
+$ echo +1k > controlfile⏎
+$ echo +1.0k > controlfile⏎   ←小数点表記にする
+$ echo +1k > controlfile⏎     ←二つ前の文字列にする
+$ echo ' +1k' > controlfile⏎  ←手前に半角空白を入れる
+$ echo '  +1k' > controlfile⏎ ←半角空白の数を変える
+    :
+```
+
+空白を入れる場合、文字列が改行コードを含めて64以上にしてしまわないように注意してください。64文字以上の文字列は無視されます。
+
 ## 規格への準拠
 
 このコマンドのソースコードはC99、IEEE Std 1003.1-2001（“POSIX.1”）に準拠させてあります。
