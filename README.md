@@ -34,6 +34,7 @@ Several more commands are available.
 * [`linets`](c_src/linets.c) ..... Add timestamp to every line of text data
 * [`oobleck`](c_src/oobleck.c) ... Output Lines Only When the Next Line Does Not Arrive for a While
 * [`ptw`](c_src/ptw.c) ........... A command wrapper to prevent a command from full-buffering (alternative of [stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation), see [this](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.en.md) for details)
+* [`qvalve`](c_src/qvalve.c) ..... Quantitative Valve for the UNIX Pipeline
 * [`relval`](c_src/relval.c) ..... Limit the Flow Rate of the UNIX Pipeline Like a Relief Valve
 * [`sleep`](c_src/sleep.c) ....... Sleep command which supports sleeping during less than a second (POSIX compliant)
 * [`tscat`](c_src/tscat.c) ....... Output each line at the data and time which is written in the top of the line

@@ -36,6 +36,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 * [`linets`](manual/linets.man.ja.md) ..... 到来したテキストデータの各行の行頭に到来時刻付加する
 * [`oobleck`](manual/oobleck.man.ja.md) ... 一定時間内に次行が到来しない場合のみ、現在保持中の行を出力する
 * [`ptw`](manual/ptw.man.ja.md) ........... フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.ja.md)）
+* [`qvalve`](manual/qvalve.man.ja.md) ..... 定量弁：データを指定された時に指定された量だけ出力
 * [`relval`](manual/relval.man.ja.md) ..... 逃し弁のようにして、行の転送レートを一定以下に保つ
 * [`sleep`](manual/sleep.man.ja.md) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
 * [`tscat`](manual/tscat.man.ja.md) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
