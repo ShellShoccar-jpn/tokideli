@@ -31,6 +31,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 これも含めて、いくつかのコマンドを用意しました。
 
 * [`calclock`](manual/calclock.man.ja.md) . カレンダー時間（年月日時分秒）とUNIX時間を相互変換する
+* [`delay`](manual/delay.man.ja.md) ....... 標準入力から到来した各バイトを一定時間だけ遅延させて標準出力に送る
 * [`getfilets`](manual/getfilets.man.ja.md) ファイルの mtime、ctime、atime を表示する
 * [`herewego`](manual/herewego.man.ja.md) . キリのいい時刻までsleepし、さらに目覚めた時刻を返す
 * [`linets`](manual/linets.man.ja.md) ..... 到来したテキストデータの各行の行頭に到来時刻付加する
@@ -39,9 +40,13 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 * [`qvalve`](manual/qvalve.man.ja.md) ..... 定量弁：データを指定された時に指定された量だけ出力
 * [`relval`](manual/relval.man.ja.md) ..... 逃し弁のようにして、行の転送レートを一定以下に保つ
 * [`sleep`](manual/sleep.man.ja.md) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
+* [`surgetk`](manual/surgetk.man.ja.md) ... サージタンクのように、一時的なバースト入力をバッファーに吸収して平滑に出力する
 * [`tscat`](manual/tscat.man.ja.md) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
+* [`tshead`](manual/tshead.man.ja.md) ..... 行頭のタイムスタンプを基準に、指定時刻以前の行だけを先頭から切り出す
+* [`tstail`](manual/tstail.man.ja.md) ..... 行頭のタイムスタンプを基準に、指定時刻以降の行だけを末尾から切り出す
 * [`typeliner`](manual/typeliner.man.ja.md) ひとまとまりのキータイプ文字列を1行にする
 * [`valve`](manual/valve.man.ja.md) ....... 1バイトごと、または1行ごとにデータを一定間隔で出力する
+* [`waitill`](manual/waitill.man.ja.md) ... 長さではなく期限（時刻）を指定してスリープする
 
 各コマンドの使用法を見たい場合は、各コマンドをビルドした上で `--help` オプションを付けて実行してください。
 

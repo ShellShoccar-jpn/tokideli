@@ -29,6 +29,7 @@ Not only we can solve the problem but also we can make the shell script simpler!
 Several more commands are available.
 
 * [`calclock`](bin/calclock) ..... Convert bewteen the Calendar time and UNIX time
+* [`delay`](c_src/delay.c) ....... Delay each byte arriving from the standard input by a fixed amount of time
 * [`getfilets`](c_src/getfilets.c) Display timestamps (mtime, ctime, atime) of a file
 * [`herewego`](c_src/herewego.c) . Sleep Until a Nice Round Time and Tell the Time
 * [`linets`](c_src/linets.c) ..... Add timestamp to every line of text data
@@ -37,9 +38,13 @@ Several more commands are available.
 * [`qvalve`](c_src/qvalve.c) ..... Quantitative Valve for the UNIX Pipeline
 * [`relval`](c_src/relval.c) ..... Limit the Flow Rate of the UNIX Pipeline Like a Relief Valve
 * [`sleep`](c_src/sleep.c) ....... Sleep command which supports sleeping during less than a second (POSIX compliant)
+* [`surgetk`](c_src/surgetk.c) ... Absorb a temporary burst on the standard input into a buffer, like a surge tank
 * [`tscat`](c_src/tscat.c) ....... Output each line at the data and time which is written in the top of the line
+* [`tshead`](c_src/tshead.c) ..... Cut out lines up to a given time, based on the timestamp in each line
+* [`tstail`](c_src/tstail.c) ..... Cut out lines from a given time onward, based on the timestamp in each line
 * [`typeliner`](c_src/typeliner.c) Make a Line of a Bunch of Key Types
 * [`valve`](c_src/valve.c) ....... Adjust the Data Transfer Rate in the UNIX Pipeline
+* [`waitill`](c_src/waitill.c) ... Sleep until a deadline (a point in time) instead of for a duration
 
 To see the usages for the commands, build the command and run them with the option `--help`.
 

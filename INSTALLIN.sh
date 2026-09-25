@@ -8,7 +8,7 @@
 # USAGE   : INSTALLIN.sh directory
 # Ret     : $?=0 (when succeeded)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2022-08-12
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-09-23
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -38,7 +38,7 @@ export UNIX_STD=2003     # to make HP-UX comply with POSIX
 print_usage_and_exit () {
   cat <<-USAGE 1>&2
 	Usage   : ${0##*/} directory
-	Version : 2022-08-12 03:47:27 JST
+	Version : 2026-09-23 00:36:09 JST
 	USAGE
   exit 1
 }
@@ -85,10 +85,41 @@ Dir_inst=${Dir_inst%/} && case $Dir_inst in '') Dir_inst='/';; esac
 
 
 ######################################################################
-# Main #1 (Compilation)
+# Main #1 (Script Duplication)
 ######################################################################
 
-echo '===== STEP (1/3). Build Commands ====='
+echo '===== STEP (1/4). Duplicate Command Scripts ====='
+echo
+[ -d "$Homedir/bin"           ] || {
+  error_exit 1 "$Homedir/bin: Command Directory not found"
+}
+[ -d "$Homedir/cmd_scripts"   ] || {
+  error_exit 1 "$Homedir/cmd_scripts: Script directory not found"
+}
+find "$Homedir/cmd_scripts" -type f -name '*.sh' |
+while IFS= read -r File_src; do
+  file_src=${File_src##*/}
+  cmd_name=${file_src%.*}
+  File_dst="$Homedir/bin/$cmd_name"
+  printf 'Duplicate "%s" -> "$s ==> "'         \
+    "cmd_scripts/$file_src" "bin/$cmd_name" 1>&2
+  cp -f "$File_src" "$File_dst" 2>/dev/null || {
+    echo 'FAILED! (while copying the file)' 1>&2
+    continue
+  }
+  chmod +x "$File_dst" || {
+    echo 'FAILED! (while doing "chmod" for the file)' 1>&2
+    continue
+  }
+  echo 'OK' 1>&2
+done
+
+
+######################################################################
+# Main #2 (Compilation)
+######################################################################
+
+echo '===== STEP (2/4). Build Commands ====='
 echo
 [ -d "$Homedir/bin"           ] || {
   error_exit 1 "$Homedir/bin: Command Directory not found"
@@ -107,11 +138,11 @@ echo "*** The commands were built successfully. ***"
 
 
 ######################################################################
-# Main #2 (Installation)
+# Main #3 (Installation)
 ######################################################################
 
 echo
-echo '===== STEP (2/3). Install Commands ====='
+echo '===== STEP (3/4). Install Commands ====='
 echo
 
 # === Make sure of the existence of the install directory ============
@@ -152,11 +183,11 @@ case $yesno in [YyNn]) echo;; *) read s;; esac
 
 
 ######################################################################
-# Main #3 (Path Addition)
+# Main #4 (Path Addition)
 ######################################################################
 
 echo
-echo '===== STEP (3/3). Add the additional path into "PATH" ====='
+echo '===== STEP (4/4). Add the additional path into "PATH" ====='
 echo
 
 # === Make sure user's intention if the user is root =================

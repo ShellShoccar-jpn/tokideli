@@ -61,7 +61,7 @@ The `ptw` command we released is a wrapper command to pretend to be a terminal (
 1. `ptw` creates a PTY.
 1. `ptw` also creates a child process with the fork() function. So, the parent and the child can share the PTY each other.
 1. The child replaces the STDOUT endpoint with the PTY's descriptor.
-1. The child finally changes itself to `TARGET_COMMAND ARG1 ARG ...` with the exec() function. By this trick, the TARGET_COMMAND thinks being connected to a terminal and changes the buffering mode. And it unconsciously sends data to the PTY instead of the actual STDOUT.
+1. The child finally changes itself to `TARGET_COMMAND ARG1 ARG2 ...` with the exec() function. By this trick, the TARGET_COMMAND thinks being connected to a terminal and changes the buffering mode. And it unconsciously sends data to the PTY instead of the actual STDOUT.
 1. The parent enters the infinite loop to receive the data the TARGET_COMMAND sent via the PTY. Then, the parent transfers them to the actual STDOUT whenever new data come.
 
 So you can solve the problem by typing the following one-liner.
@@ -74,7 +74,7 @@ $ while sleep 1; do date; done | ptw tr 1 1 | cat
 $ while sleep 1; do date; done | ptw python3 -c 'import sys; [print(l,end="") for l in sys.stdin]' | cat
 
 # (C) for Perl users
-$ while sleep 1; do date; done | ptw perl perl -e 'while(<>){print}' | cat
+$ while sleep 1; do date; done | ptw perl -e 'while(<>){print}' | cat
 ```
 
 Thus, **you can think of the `ptw` command as a more strongly effective version of `stdbuf -o L`.**
@@ -89,7 +89,7 @@ But you do not have to add "ptw" word for the last command in the one-liner. If 
 ptw CMD1 arg1a arg1b ... | ptw CMD2 arg2a arg2b ... | ... | CMD9 arg9a arg9b ...
 ```
 
-## But PTW Is Not Incvincible...
+## But PTW Is Not Invincible...
 
 There is no doubt that `ptw` effectiveness is stronger than `stdbuf`. However, there are still a few commands that `ptw` cannot change the buffering mode.
 
@@ -107,7 +107,7 @@ case $(awk -W interactive 'BEGIN{print}' 2>&1 >/dev/null) in
 esac
 ```
 
-### Perl, Python with the Statement for Specifying the Buffering Mode
+### Perl, Python Scripts Specifying the Buffering Mode Explicitly
 
 In these cases, they also overwrite the preset buffering mode. There is no choice but to remove the statement.
 
@@ -123,6 +123,19 @@ The dominating program of the buffering mode is not the shell script itself but 
 ## Side Effects
 
 Some commands change their behaviors depending on whether they are connected to a terminal or not. So you might get undesired data because the commands wrapped by `ptw` think of being connected to a terminal.
+
+The `ls` command is one such example. In the following example, the result differs depending on whether `ls` is wrapped by `ptw` or not.
+
+```sh:
+$ ls | cat
+$ ptw ls | cat
+```
+
+This is because `ls` tries to arrange the filenames side by side according to the terminal width when `ptw` is attached, whereas it outputs one filename per line when it is not. If you want one filename per line even when `ptw` is attached, use the `-1` option.
+
+```sh:
+$ ptw ls -1 | cat
+```
 
 For instance, some implementations of the grep commands color their output text data when they are connected to a terminal. So you may be able to see colored text data by the following command.
 
