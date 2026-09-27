@@ -90,8 +90,8 @@ Dir_inst=${Dir_inst%/} && case $Dir_inst in '') Dir_inst='/';; esac
 
 echo '===== STEP (1/4). Duplicate Command Scripts ====='
 echo
-[ -d "$Homedir/bin"           ] || {
-  error_exit 1 "$Homedir/bin: Command Directory not found"
+mkdir -p "$Homedir/bin"        || {
+  error_exit 1 "$Homedir/bin: Cannot make Command Directory"
 }
 [ -d "$Homedir/cmd_scripts"   ] || {
   error_exit 1 "$Homedir/cmd_scripts: Script directory not found"
