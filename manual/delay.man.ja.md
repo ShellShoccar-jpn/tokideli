@@ -171,3 +171,5 @@ $ echo '500ms' > ctrl    ⏎  ← 遅延時間だけを500ミリ秒に変更（�
 ## 関連項目
 
 [surgetk(1)](surgetk.man.ja.md) - このコマンドの*time*パラメーターを常に0に固定した、バースト吸収専用の軽量版。
+
+[先行するdelayコマンド（rom1v/delay）との比較](delay_commands_comparision.info.ja.md) - バッファサイズの意味の違いなど、設計思想の違いについてのレポート。

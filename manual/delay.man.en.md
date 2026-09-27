@@ -171,3 +171,5 @@ The source code of this command conforms to C99 and IEEE Std 1003.1-2008 ("POSIX
 ## See Also
 
 [surgetk(1)](surgetk.man.en.md) - A lighter-weight variant dedicated to burst absorption, equivalent to this command with its *time* parameter permanently fixed at 0.
+
+[Comparison with an earlier delay command (rom1v/delay)](delay_commands_comparision.info.en.md) - A report on design differences, including how "buffer size" is defined differently between the two.
