@@ -21,7 +21,7 @@
 #             =forcible ... Line-buffered mode or exit if impossible
 #
 # Designed originally by Nobuaki Tounaka
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2025-03-30
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-07-17
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
