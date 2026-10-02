@@ -39,10 +39,10 @@ Running `tshead -t 20260821190002 access.log` against this outputs only the line
 20260821190002 request 3
 ```
 
-The reference time is given via either `-d` (a time relative to the start time or to the last line's time) or `-t` (an absolute time). Depending on how it is given, the output range is one of the following six patterns.
+The reference time is given via either `-d` (a time relative to the first line's time or to the last line's time) or `-t` (an absolute time). Depending on how it is given, the output range is one of the following six patterns.
 
-* (a) `[ first line, start time + duration ]`
-* (b) `[ first line, start time + duration )`
+* (a) `[ first line, first line's time + duration ]`
+* (b) `[ first line, first line's time + duration )`
 * (c) `[ first line, last line's time - duration ]`
 * (d) `[ first line, last line's time - duration )`
 * (e) `[ first line, date-and-time ]`
@@ -64,7 +64,7 @@ Note that if file is a regular file, it is processed at high speed internally by
 
 ### -c, -e, -I, -z
 
-These options specify which format the timestamp string (the first field) and the argument of the `-t` option are recorded in. `-c`, `-e`, `-I`, and `-z` respectively mean calendar time, UNIX time, extended ISO 8601 format, and the number of seconds elapsed since this command started; they are mutually exclusive. If none of them is given, `-c` is assumed. The format details for each option are as follows.
+These options specify which format the timestamp string (the first field) and the argument of the `-t` option are recorded in. `-c`, `-e`, `-I`, and `-z` respectively mean calendar time, UNIX time, extended ISO 8601 format, and the number of seconds elapsed since the timestamped data started being produced; they are mutually exclusive. If none of them is given, `-c` is assumed. The format details for each option are as follows.
 
 * -c: calendar time
   * `YYYYMMDDhhmmss[.ddddddddd]`
@@ -73,10 +73,12 @@ These options specify which format the timestamp string (the first field) and th
 * -I: extended ISO 8601 format
   * `YYYY-MM-DDThh:mm:ss[,ddddddddd]{+|-}hh:mm`
   * `YYYY-MM-DDThh:mm:ss[,ddddddddd]Z`
-* -z: the number of seconds elapsed since this command started
+* -z: the number of seconds elapsed since the timestamped data started being produced
   * `[+|-]n[.ddddddddd]`
 
-*YYYYMMDDhhmmss* is a 14-digit integer made up of the year, month, day, hour, minute, and second; *n* is the number of seconds elapsed since 1970-01-01T00:00:00 in the UTC timezone (for -e), or since this command started (for -z). In either case, you may append a decimal part of up to 9 digits (*ddddddddd*) to show sub-second precision.
+*YYYYMMDDhhmmss* is a 14-digit integer made up of the year, month, day, hour, minute, and second; *n* is the number of seconds elapsed since 1970-01-01T00:00:00 in the UTC timezone (for -e), or since the timestamped data started being produced (for -z). In either case, you may append a decimal part of up to 9 digits (*ddddddddd*) to show sub-second precision.
+
+The origin of the `-z` elapsed-seconds count (what "0" means) has nothing to do with when this command itself was started. It is always whatever reference moment the producer of that timestamped data independently chose to call "0."
 
 The interpretation of the 14-digit integer value (with `-c`), and of the extended ISO 8601 format with the timezone omitted (with `-I`), depends on the timezone configured on the OS. If you want to specify the timezone explicitly, set the environment variable TZ, or use the `-u` option.
 
@@ -115,13 +117,14 @@ Sets the timezone to UTC. This is the same as setting the environment variable T
 
 ### -Z
 
-Changes how the reference time is computed.
+Only meaningful for pattern (a)/(b) (when the argument of `-d` has no leading "-"). The reference time for this pattern is normally "the first line's timestamp" + *duration*, but with `-Z` it becomes "time zero" + *duration* instead.
 
-Without `-Z`, the reference time for patterns (a) and (b) (when the argument of `-d` has no leading "-") is "the moment this command started" + *duration*. With `-Z`, it instead becomes "the timestamp of the first line" + *duration*.
+What "time zero" means depends on which of [`-c`, `-e`, `-I`, or `-z`](#-c--e--i--z) is given.
 
-For example, suppose the first field of the first line is "20200229235959," and `-d 5s` is given. Without `-Z`, the reference time is "5 seconds after this command started." With `-Z`, the reference time is "2020-03-01T00:00:04" (5 seconds after the first line's timestamp) instead.
+* With `-c`, `-e`, or `-I`: the UNIX epoch (1970-01-01T00:00:00 UTC)
+* With `-z`: whatever moment the `-z`-formatted data itself treats as its own origin (unrelated to the UNIX epoch)
 
-Note that this option only has meaning for patterns (a) and (b). It has no effect on patterns (c) and (d) (based on the last line) or patterns (e) and (f) (an absolute time given via `-t`).
+For any other pattern (the last-line-based patterns (c)/(d), or the absolute-time patterns (e)/(f) given via `-t`), `-Z` has no effect at all (it is silently ignored, with no error or warning).
 
 ## Modes
 
@@ -134,7 +137,7 @@ This is the mode used when the command is started with the `-d` option. The refe
 Whether or not *duration* is prefixed with a "-" changes how the reference time is computed.
 
 * Without a leading "-" (patterns (a) and (b))
-  * The reference time is "the moment this command started" + *duration*. (With the [`-Z`](#-z) option, it is "the timestamp of the first line" + *duration* instead.)
+  * The reference time is "the first line's timestamp" + *duration*. (With the [`-Z`](#-z) option, it is "time zero" + *duration* instead.)
   * Without `-x` (pattern (a)): outputs the range `[ first line, reference time ]` (including the line exactly at the reference time).
   * With `-x` (pattern (b)): outputs the range `[ first line, reference time )` (excluding the line exactly at the reference time).
 * With a leading "-" (patterns (c) and (d))
@@ -164,12 +167,6 @@ $ tshead -t 20260821190002 access.log
 20260821190002 request 3
 ```
 
-Watch a running server's log in real time, recording only the first 10 seconds after monitoring begins, then stop.
-
-```sh:
-$ tail -f access.log | tshead -d 10s > first_10sec.log
-```
-
 From an already-accumulated log file, extract only the settled part, excluding the last 2 seconds (which might still be subject to change).
 
 ```sh:
@@ -179,14 +176,28 @@ $ tshead -d -2s access.log
 20260821190002 request 3
 ```
 
-Using the `-Z` option, extract only the lines within 3 seconds of the first line's timestamp, taking that timestamp as the reference point.
+Taking the first line's timestamp as the reference point, extract only the lines within 3 seconds of it.
 
 ```sh:
-$ tshead -Z -d 3s access.log
+$ tshead -d 3s access.log
 20260821190000 request 1
 20260821190001 request 2
 20260821190002 request 3
 20260821190003 request 4
+```
+
+Against a `-z`-formatted log (whose first line is not necessarily at elapsed-seconds "0"), take the data's own creation-start moment, rather than whatever happens to be the first line of the stream, as the reference point, and extract only the lines within 12 seconds of it.
+
+```text:uz.log
+5 line-at-5
+10 line-at-10
+15 line-at-15
+```
+
+```sh:
+$ tshead -z -Z -d 12s uz.log
+5 line-at-5
+10 line-at-10
 ```
 
 When two or more files are given, a filename header is added, just as with head(1). Give `-q` to suppress it.

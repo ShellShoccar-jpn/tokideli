@@ -9,7 +9,7 @@ surgetk - Surge tank: absorb a temporary burst arriving at the standard input in
 ## Synopsis
 
 ```sh:
-surgetk [-s|-o|-d] [-v] size
+surgetk [-s|-o|-d] [-v] [-m fd|file] size
 surgetk -i
 ```
 
@@ -104,6 +104,30 @@ Raises the verbosity level by one each time it is given. `-v` sets level 1, `-vv
 
 At level 1, at minimum, every time the buffer becomes full (overflows), this is reported together with the action taken this time (suspend, overwrite, or disconnect).
 
+### -m fd|file
+
+Reports the ring buffer's current fill level, on demand. Specify the destination for the report as either a file descriptor number that is already open for writing, or a file path (which will be created if it does not exist) — the same convention as [oobleck(1)](oobleck.man.en.md)'s `-d fd|file`.
+
+When a file path is given and that file already exists, its existing content is kept, and new report lines are appended after it (since this is timestamped log data, the file is never truncated and rewritten from the beginning).
+
+Whenever this command receives a `SIGUSR1` while this option is given, it writes one line to that destination describing the state at that moment,
+
+```
+<UNIX time> <own PID> <bytes in use> <capacity>
+```
+
+(space-separated, capacity also in bytes; the UNIX time has millisecond precision, always printed with exactly 3 digits after the decimal point, e.g. `1759381200.123`), and flushes it immediately. No report is ever produced unless this option is given, and even when it is given, nothing is written spontaneously unless a `SIGUSR1` is received — it is purely on-demand. If you want periodic reports, send `SIGUSR1` periodically yourself, for example:
+
+```sh:
+$ while sleep 1; do kill -USR1 "$PID"; done
+```
+
+The 2nd field is this command's own PID. Since the destination file is opened with `O_APPEND` (see [above](#-m-fdfile)), multiple surgetk processes can safely share the same destination file as their report target without their writes colliding or corrupting each other; the PID in the 2nd field lets you tell which process each line in the merged output came from.
+
+Even while reading from the standard input has been stalled for a long time (i.e. even `-v`'s running commentary has gone quiet), sending `SIGUSR1` still produces a report immediately. This is because a dedicated monitor thread, created specifically for this option, waits for the signal's arrival via `sigwait()`.
+
+Note, however, that obtaining the report requires the lock that protects the ring buffer, so if `SIGUSR1` happens to arrive at the exact moment the output-side thread is holding that lock while blocked on a slow write to the standard output, writing the report may be delayed slightly until that block clears (this has no effect on data integrity).
+
 ### -i
 
 Investigation mode. When given, this command doesn't perform the surge-tank operation at all; instead, it investigates the sizes of the various OS/libc buffers that a byte passes through around this command (see [above](#what-it-means-to-make-size-small)), prints them to the standard output, and exits immediately. All other options (`-s`/`-o`/`-d`/`-v`) and the *size* argument are ignored (you don't even need to specify *size*).
@@ -147,6 +171,20 @@ When using [linets(1)](linets.man.en.md) to record the arrival time of text data
 
 ```sh:
 $ cat FAST_DATA_SOURCE_VIA_NAMED_PIPE | linets -3 | surgetk -d 100MiB | COMMAND1
+```
+
+Check surgetk's ring-buffer fill level via `SIGUSR1` and `/tmp/mon.log`, while keeping surgetk in the middle of a pipeline. `$!` cannot be used to get the PID of a command placed in the middle of a pipeline (it only gives the PID of the pipeline's last command). Instead, this uses a technique common to any POSIX-conformant shell: start a subshell with `sh -c` that first writes its own PID (`$$`) to a file, and then `exec`s surgetk in its place — which replaces the process's running program without changing its PID — so the PID written to the file is guaranteed to be surgetk's own.
+
+```sh:
+$ PIDFILE=$(mktemp)
+$ mosquitto_sub -t MY_TOPIC -h BROKER \
+    | sh -c 'echo "$$" >"'"$PIDFILE"'"; exec surgetk -m /tmp/mon.log 1MiB' \
+    | COMMAND1 &
+$ PID=$(cat "$PIDFILE")
+$ kill -USR1 "$PID"
+$ cat /tmp/mon.log
+1759381200.123 12345 2048 1048576
+$ rm -f "$PIDFILE"
 ```
 
 Check the sizes of the OS/libc buffers around this command.

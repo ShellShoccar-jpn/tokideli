@@ -90,6 +90,8 @@ Normally, when the next line arrives while a line is being held, the held line i
 
 If an integer is specified, it is regarded as a file descriptor number (`fd`). If a non-integer string is specified, it is regarded as a filename (`file`). If you want to specify a file whose name is an integer, include a path such as `./2`.
 
+When a filename is given and that file already exists, its existing content is kept, and the discarded lines are appended after it (the file is never truncated and rewritten from the beginning).
+
 ### -p *n*
 
 (Only on OSes supporting _POSIX_PRIORITY_SCHEDULING) Process priority setting. To improve the accuracy of the nanosleep() function used for adjusting the data transfer rate, setting *n* to 2 or 3 raises the process priority. *n* ranges over four levels from 0 to 3, and the default is 1.

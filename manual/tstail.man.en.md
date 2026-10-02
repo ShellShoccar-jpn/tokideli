@@ -39,10 +39,10 @@ Running `tstail -t 20260821190002 access.log` against this outputs only the line
 20260821190004 request 5
 ```
 
-The reference time is given via either `-d` (a time relative to the start time or to the first line's time) or `-t` (an absolute time). Depending on how it is given, the output range is one of the following six patterns.
+The reference time is given via either `-d` (a time relative to the last line's time or to the first line's time) or `-t` (an absolute time). Depending on how it is given, the output range is one of the following six patterns.
 
-* (a) `[ start time - duration, last line ]`
-* (b) `( start time - duration, last line ]`
+* (a) `[ last line's time - duration, last line ]`
+* (b) `( last line's time - duration, last line ]`
 * (c) `[ first line's time + duration, last line ]`
 * (d) `( first line's time + duration, last line ]`
 * (e) `[ date-and-time, last line ]`
@@ -58,13 +58,13 @@ Because of the way it scans backward from the end, this command has the followin
 
 ### Using it together with "tail -f"
 
-Since the end of the output range is always "the last line," this command cannot produce any output until it reaches the end of the input (EOF) — this is true even for patterns (a)/(b), whose reference time itself is already fixed the moment this command starts. Therefore, it cannot be used together with an unbounded, never-ending stream such as one from `tail -f` (use [tshead(1)](tshead.man.en.md) instead for that kind of purpose).
+Since the end of the output range is always "the last line," this command cannot produce any output until it reaches the end of the input (EOF). Therefore, it cannot be used together with an unbounded, never-ending stream such as one from `tail -f` (use [tshead(1)](tshead.man.en.md) instead for that kind of purpose).
 
 ### Memory usage
 
 If file is a regular file, it is processed at high speed internally, from the end, by using a memory map (mmap), so memory usage is not a concern.
 
-For non-seekable special files, such as pipes or terminals, it is instead processed by reading it line by line. In that case, once the reference time has already been fixed, any line earlier than it is discarded on the spot, so memory usage stays roughly proportional to the size of the output. However, when the [`-Z`](#-z) option is given (for patterns (a)/(b), whose reference time depends on the last line), this command cannot decide which lines to keep until the last line is known, so it holds every line in memory until it reaches the end of the input. In that case, be aware that memory usage grows in proportion to the size of the non-seekable input.
+For non-seekable special files, such as pipes or terminals, it is instead processed by reading it line by line. For patterns whose reference time does not depend on the last line ((c), (d), (e), and (f)), any line earlier than the reference time is discarded on the spot, so memory usage stays roughly proportional to the size of the output. For patterns (a) and (b), however, the reference time itself depends on the last line's timestamp, so this command cannot decide which lines to keep until the last line is known, and it holds every line in memory until it reaches the end of the input. In that case, be aware that memory usage grows in proportion to the size of the non-seekable input.
 
 ## Arguments
 
@@ -76,7 +76,7 @@ The file to use as the data source. If omitted, or if `-` is given, standard inp
 
 ### -c, -e, -I, -z
 
-These options specify which format the timestamp string (the first field) and the argument of the `-t` option are recorded in. `-c`, `-e`, `-I`, and `-z` respectively mean calendar time, UNIX time, extended ISO 8601 format, and the number of seconds elapsed since this command started; they are mutually exclusive. If none of them is given, `-c` is assumed. The format details for each option are as follows.
+These options specify which format the timestamp string (the first field) and the argument of the `-t` option are recorded in. `-c`, `-e`, `-I`, and `-z` respectively mean calendar time, UNIX time, extended ISO 8601 format, and the number of seconds elapsed since the timestamped data started being produced; they are mutually exclusive. If none of them is given, `-c` is assumed. The format details for each option are as follows.
 
 * -c: calendar time
   * `YYYYMMDDhhmmss[.ddddddddd]`
@@ -85,10 +85,12 @@ These options specify which format the timestamp string (the first field) and th
 * -I: extended ISO 8601 format
   * `YYYY-MM-DDThh:mm:ss[,ddddddddd]{+|-}hh:mm`
   * `YYYY-MM-DDThh:mm:ss[,ddddddddd]Z`
-* -z: the number of seconds elapsed since this command started
+* -z: the number of seconds elapsed since the timestamped data started being produced
   * `[+|-]n[.ddddddddd]`
 
-*YYYYMMDDhhmmss* is a 14-digit integer made up of the year, month, day, hour, minute, and second; *n* is the number of seconds elapsed since 1970-01-01T00:00:00 in the UTC timezone (for -e), or since this command started (for -z). In either case, you may append a decimal part of up to 9 digits (*ddddddddd*) to show sub-second precision.
+*YYYYMMDDhhmmss* is a 14-digit integer made up of the year, month, day, hour, minute, and second; *n* is the number of seconds elapsed since 1970-01-01T00:00:00 in the UTC timezone (for -e), or since the timestamped data started being produced (for -z). In either case, you may append a decimal part of up to 9 digits (*ddddddddd*) to show sub-second precision.
+
+The origin of the `-z` elapsed-seconds count (what "0" means) has nothing to do with when this command itself was started. It is always whatever reference moment the producer of that timestamped data independently chose to call "0."
 
 The interpretation of the 14-digit integer value (with `-c`), and of the extended ISO 8601 format with the timezone omitted (with `-I`), depends on the timezone configured on the OS. If you want to specify the timezone explicitly, set the environment variable TZ, or use the `-u` option.
 
@@ -127,13 +129,16 @@ Sets the timezone to UTC. This is the same as setting the environment variable T
 
 ### -Z
 
-Changes how the reference time is computed.
+Only meaningful for pattern (c)/(d) (when the argument of `-d` has a leading "-"). The reference time for this pattern is normally "the first line's timestamp" + *duration*, but with `-Z` it becomes "time zero" + *duration* instead.
 
-Without `-Z`, the reference time for patterns (a) and (b) (when the argument of `-d` has no leading "-") is "the moment this command started" - *duration*. With `-Z`, it instead becomes "the timestamp of the last line" - *duration*.
+What "time zero" means depends on which of [`-c`, `-e`, `-I`, or `-z`](#-c--e--i--z) is given.
 
-Basing it on the moment this command started makes the result different every time you run it (it depends on the wall clock, so it is not reproducible). Basing it on the last line's timestamp with `-Z`, on the other hand, always gives the same result for the same file (it is reproducible).
+* With `-c`, `-e`, or `-I`: the UNIX epoch (1970-01-01T00:00:00 UTC)
+* With `-z`: whatever moment the `-z`-formatted data itself treats as its own origin (unrelated to the UNIX epoch)
 
-Note that this option only has meaning for patterns (a) and (b). It has no effect on patterns (c) and (d) (based on the first line) or patterns (e) and (f) (an absolute time given via `-t`).
+For any other pattern (the last-line-based patterns (a)/(b), or the absolute-time patterns (e)/(f) given via `-t`), `-Z` has no effect at all (it is silently ignored, with no error or warning).
+
+Note that when `-Z` is given together with pattern (c)/(d), the reference time no longer depends on the content of the first line at all, so this command skips opening the first file just to read its first line.
 
 ## Modes
 
@@ -146,11 +151,11 @@ This is the mode used when the command is started with the `-d` option. The refe
 Whether or not *duration* is prefixed with a "-" changes how the reference time is computed.
 
 * Without a leading "-" (patterns (a) and (b))
-  * The reference time is "the moment this command started" - *duration*. (With the [`-Z`](#-z) option, it is "the timestamp of the last line" - *duration* instead.)
+  * The reference time is "the last line's timestamp" - *duration*. When two or more files are given, "the last line" means the last line of the last file given.
   * Without `-x` (pattern (a)): outputs the range `[ reference time, last line ]` (including the line exactly at the reference time).
   * With `-x` (pattern (b)): outputs the range `( reference time, last line ]` (excluding the line exactly at the reference time).
 * With a leading "-" (patterns (c) and (d))
-  * The reference time is "the first line's timestamp" + *duration*. When two or more files are given, "the first line" means the first line of the first file given.
+  * The reference time is "the first line's timestamp" + *duration*. When two or more files are given, "the first line" means the first line of the first file given. (With the [`-Z`](#-z) option, it is "time zero" + *duration* instead.)
   * Without `-x` (pattern (c)): outputs the range `[ reference time, last line ]`.
   * With `-x` (pattern (d)): outputs the range `( reference time, last line ]`.
 
@@ -176,10 +181,10 @@ $ tstail -t 20260821190002 access.log
 20260821190004 request 5
 ```
 
-From an already-accumulated log file, extract only the last 2 seconds' worth of records (using `-Z` so the result is reproducible).
+From an already-accumulated log file, extract only the last 2 seconds' worth of records.
 
 ```sh:
-$ tstail -Z -d 2s access.log
+$ tstail -d 2s access.log
 20260821190003 request 4
 20260821190004 request 5
 ```
@@ -191,6 +196,19 @@ $ tstail -d -2s access.log
 20260821190002 request 3
 20260821190003 request 4
 20260821190004 request 5
+```
+
+Against a UNIX-time-formatted log (whose first line is not necessarily at second "0"), take the UNIX epoch itself, rather than the first line, as the reference point, and extract only the lines at or after 12 seconds from it.
+
+```text:ue.log
+5 line-at-5
+10 line-at-10
+15 line-at-15
+```
+
+```sh:
+$ tstail -e -Z -d -12s ue.log
+15 line-at-15
 ```
 
 When two or more files are given, a filename header is added, just as with tail(1). Give `-q` to suppress it.
