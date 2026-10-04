@@ -44,7 +44,8 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 Not only we can solve the problem but also we can make the shell script simpler! Here's an actual recording comparing a naive `while`/`sleep` loop against `valve -l`, side by side. The naive loop (left) drifts by about +0.27s over 10 iterations, while `valve` (right) stays within about +0.02s.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/demo.gif" alt="naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s">
+  <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/demo.gif" alt="naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s"><br>
+  <sub>Script used to reproduce this recording: <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.sh">demo.sh</a> / <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.tape">demo.tape</a> (the <a href="https://github.com/charmbracelet/vhs">vhs</a> recording recipe)</sub>
 </p>
 
 Several more commands are available.
