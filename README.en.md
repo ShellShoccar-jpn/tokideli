@@ -1,6 +1,6 @@
 # TOKI-DELI
 
-We will deliver the "TOKI" (means "Timing" in Japanese) management command to your UNIX computer!
+We will deliver the "TOKI" (means "Timing" in Japanese) management commands to your UNIX computer!
 
 （日本語版は[こちら](README.ja.md)）
 
