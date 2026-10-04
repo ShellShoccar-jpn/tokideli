@@ -40,16 +40,20 @@ So the data itself and its timestamp **share** the byte budget specified via `-b
 
 ### tokideli's delay: timestamps live outside the requested size
 
-tokideli's `delay.c`, by contrast, implements its ring buffer as an array of `ringelem_t` structs, each holding "one byte of data plus its arrival time (a nanosecond-precision `struct timespec`)":
+tokideli's `delay.c`, by contrast, implements its ring buffer as an array of `ringelem_t` structs, each holding "one byte of data plus its arrival time (nanosecond-precision)":
 
 ```c
 typedef struct _ringelem_t {
   unsigned char ucData;      /* the byte received */
-  tmsp          tsArrival;   /* arrival time (struct timespec) */
+  uint32_t      u4Nsec;      /* fractional-second part of the arrival
+                                 time (nanoseconds, 0-999,999,999)     */
+  time_t        i8Sec;       /* integer-second part of the arrival time */
 } ringelem_t;
 ```
 
-The `size` argument (the `100MiB` part of, e.g., `100MiB@1s`) represents the **element count** of this struct array — i.e., the pure number of data bytes. The actual memory allocated is `sizeof(ringelem_t) * size`; combining the 1-byte `unsigned char` with the (typically) 16-byte `struct timespec`, alignment padding brings each element to around 24 bytes. In other words, roughly 23 times as much memory again is allocated **outside** the requested `size`, purely to hold the per-byte timestamps.
+Rather than keeping the arrival time as a `struct timespec`, it is split into a `uint32_t` (the nanosecond fraction only ever needs 0-999,999,999, which fits comfortably in 32 bits) and a `time_t`, with the fields ordered from smallest to largest alignment requirement (1 byte, then 4 bytes, then 8 bytes). This lets the struct pack with minimal padding.
+
+The `size` argument (the `100MiB` part of, e.g., `100MiB@1s`) represents the **element count** of this struct array — i.e., the pure number of data bytes. The actual memory allocated is `sizeof(ringelem_t) * size`, which comes to 16 bytes per element on a 64-bit system (versus the 24 bytes it would be if a plain `struct timespec` were used instead, a 33% reduction from the layout trick above). In other words, roughly 15 times as much memory again is allocated **outside** the requested `size`, purely to hold the per-byte timestamps.
 
 ### Why the difference: granularity of recording
 
@@ -58,7 +62,7 @@ This isn't just an implementation quirk — it reflects a difference in the gran
 - rom1v/delay reads and writes data in chunks of up to 4000 bytes at a time, as much as a single `poll()` call happens to detect. All bytes within one chunk share a single (millisecond-precision) timestamp, so the cost of recording a timestamp is paid once per chunk.
 - tokideli's delay records a separate nanosecond-precision arrival time for every single byte, so it can compute the delay precisely on a byte-by-byte basis. Achieving that precision requires attaching a timestamp to every byte individually, which is exactly why the memory overhead is so much larger.
 
-In short, rom1v/delay trades away timestamp precision and granularity (chunk-level, millisecond-level, up to 4000 bytes at a time) for a much smaller memory footprint, while tokideli's delay spends far more memory to get byte-level, nanosecond-level precision. This trade-off is also why tokideli's `delay.c` rejects any size request exceeding 80% of the machine's physical RAM: since every requested byte actually costs roughly 24 real bytes, the gap between the requested size and the real memory footprint is large enough that an careless size argument could exhaust the machine's memory.
+In short, rom1v/delay trades away timestamp precision and granularity (chunk-level, millisecond-level, up to 4000 bytes at a time) for a much smaller memory footprint, while tokideli's delay spends far more memory to get byte-level, nanosecond-level precision. This trade-off is also why tokideli's `delay.c` rejects any size request exceeding 80% of the machine's physical RAM: since every requested byte actually costs roughly 16 real bytes, the gap between the requested size and the real memory footprint is large enough that an careless size argument could exhaust the machine's memory.
 
 ## Difference in Overflow Handling
 

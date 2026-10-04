@@ -204,3 +204,5 @@ The source code of this command conforms to C99 and IEEE Std 1003.1-2008 ("POSIX
 ## See Also
 
 [delay(1)](delay.man.en.md)
+
+[How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md) - How to delay line-oriented text data line by line, and what to watch out for.

@@ -184,4 +184,4 @@ BEGIN {
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)
+[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)

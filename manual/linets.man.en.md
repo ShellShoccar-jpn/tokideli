@@ -14,7 +14,7 @@ linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1du] [file [...]]
 
 ## Description
 
-This command reads each line from the text file *file*, prepends a timestamp — the moment the first character of that line was read — to the front of the line, and writes the whole line to standard output. The precision of the timestamp (from second down to nanosecond), its format (calendar time, UNIX time, etc.), and whether to also append the difference from the previous line can all be switched via options.
+This command reads each line from the text file *file*, prepends a timestamp — the moment the first character of that line was read — to the front of the line, and writes the whole line to standard output. The precision of the timestamp (from second down to nanosecond), its format (calendar time, UNIX time, etc.), and whether to also append the difference from the previous line can all be switched via options. (If you want to prepend the arrival time of the end of each line instead, see the [Examples](#examples) section.)
 
 See the description of each option below (-c, -e, -z, -Z) for the exact format of each one.
 
@@ -46,7 +46,7 @@ YYYYMMDDhhmmss.ddddddddd foo bar 123
 
 That is: the 14-digit calendar-time integer YYYYMMDDhhmmss; then, if the -3, -6, or -9 option is used, a decimal point "." followed by the fractional part *d* at that precision (with -0, no decimal point is shown either); then a single space " "; followed by the original one line of text data.
 
-Note that the 14-digit integer value depends on the timezone set for the OS. If you want to specify the timezone explicitly, set the environment variable TZ. (See the "Examples" section.)
+Note that the 14-digit integer value depends on the timezone set for the OS. If you want to specify the timezone explicitly, set the environment variable TZ. (See the [Examples](#examples) section.)
 
 #### -e: UNIX time
 
@@ -68,7 +68,7 @@ YYYY-MM-DDThh:mm:ss,ddddddddd{+|-}hh:mm foo bar 123
 
 That is: the year, month, day, hour, minute, and second according to ISO 8601; then, if the -3, -6, or -9 option is used, a decimal comma "," (a comma, not a period) followed by the fractional part *d* at that precision (with -0, no decimal part is shown either); then a signed hour-and-minute part indicating the timezone; then a single space " "; followed by the original one line of text data.
 
-Note that the timezone can be changed by setting the environment variable TZ. (See the "Examples" section.)
+Note that the timezone can be changed by setting the environment variable TZ. (See the [Examples](#examples) section.)
 
 #### -z: elapsed seconds since this command started
 
@@ -168,6 +168,18 @@ When recording the arrival time of text data, if the downstream command ("COMMAN
 $ cat FAST_DATA_SOURCE_VIA_NAMED_PIPE | linets -3 | surgetk -d 100MiB | COMMAND1
 ```
 
+This command prepends, as column 1 of each line, the arrival time of that line's 1st character, but suppose you instead want the arrival time of each line's end (the newline character, or EOF) — in UNIX time, millisecond precision. To do this, first pass the data through the harmless grep(1) and stdbuf(1) commands, which adjust the timing so that each whole line is emitted all at once, right at the moment that line's end arrives, before finally feeding it into this command.
+
+```sh:
+$ cat DATA_SOURCE | stdbuf -o L grep "" | linets -3e
+```
+
+If you want to stay within POSIX (e.g. when the stdbuf(1) command is unavailable), you can instead use the [ptw(1)](ptw.man.en.md) command, as follows.
+
+```sh:
+$ cat DATA_SOURCE | ptw grep "" | linets -3e
+```
+
 ## Bugs
 
 This command can display timestamps down to nanosecond precision, but that does not mean the time shown is always accurate to that precision. How accurate it actually is depends on the state of the OS and the performance of the hardware.
@@ -178,4 +190,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[tscat(1)](tscat.man.en.md), [LINETS & TSCAT Command Tutorial](linets_and_tscat.en.md)
+[tscat(1)](tscat.man.en.md), [LINETS & TSCAT Command Tutorial](linets_and_tscat.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md)

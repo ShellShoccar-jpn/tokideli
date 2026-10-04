@@ -185,4 +185,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[linets(1)](linets.man.en.md), [LINETS & TSCAT tutorial](linets_and_tscat.en.md), [typeliner(1)](typeliner.man.en.md)
+[linets(1)](linets.man.en.md), [LINETS & TSCAT tutorial](linets_and_tscat.en.md), [typeliner(1)](typeliner.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md)

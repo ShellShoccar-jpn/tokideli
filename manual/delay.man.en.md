@@ -62,7 +62,9 @@ To distinguish this parameter from *time*, you must append the character `@` imm
 
 If you specify a size that amounts to 80% or more of the total physical memory installed on the machine this command is running on, this is treated as an error.
 
-Note that this 80% figure is not compared against the *size* value itself, but against the amount of memory this command actually allocates internally. The ring buffer stores, alongside each held byte, the timestamp of when that byte arrived, so the actual memory footprint ends up considerably larger than the *size* value alone would suggest. As a rough guide, on a typical 64-bit environment, holding one byte actually costs around 24 bytes of memory, so the practical upper bound on *size* is not 80% of installed memory but roughly 1/24 of it (on the order of 3-4%). This multiplier varies depending on the OS and CPU architecture (e.g. 32-bit vs. 64-bit).
+Note that this 80% figure is not compared against the *size* value itself, but against the amount of memory this command actually allocates internally. The ring buffer stores, alongside each held byte, the timestamp of when that byte arrived, so the actual memory footprint ends up considerably larger than the *size* value alone would suggest. As a rough guide, on a typical 64-bit environment, holding one byte actually costs around 16 bytes of memory, so the practical upper bound on *size* is not 80% of installed memory but roughly 1/16 of it (on the order of 5%). This multiplier varies depending on the OS and CPU architecture (e.g. 32-bit vs. 64-bit).
+
+For a way to delay line-oriented text data without paying this memory overhead, see [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md).
 
 ### controlfile
 
@@ -173,3 +175,5 @@ The source code of this command conforms to C99 and IEEE Std 1003.1-2008 ("POSIX
 [surgetk(1)](surgetk.man.en.md) - A lighter-weight variant dedicated to burst absorption, equivalent to this command with its *time* parameter permanently fixed at 0.
 
 [Comparison with an earlier delay command (rom1v/delay)](delay_commands_comparision.info.en.md) - A report on design differences, including how "buffer size" is defined differently between the two.
+
+[How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md) - How to delay line-oriented text data line by line, and what to watch out for.

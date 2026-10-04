@@ -204,3 +204,5 @@ pipe_buf             4096
 ## 関連項目
 
 [delay(1)](delay.man.ja.md)
+
+[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md) - テキストデータを行単位で遅延出力したい場合の方法と注意点。
