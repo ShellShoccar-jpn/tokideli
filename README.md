@@ -1,8 +1,25 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/logo.svg" width="520" alt="tokideli">
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-public_domain-blue"></a>
+  <img alt="Tested on 7 platforms" src="https://img.shields.io/badge/tested_on-Linux_Solaris_FreeBSD_NetBSD_OpenBSD_macOS_Android-informational">
+</p>
+
 # TOKI-DELI
 
-We will deliver the "TOKI" (means "Timing" in Japanese) management commands to your UNIX computer!
+A collection of lightweight POSIX-compliant commands for accurate time management that provides the perfect timing even for shell scripts.
+"We deliver the accurate 'TOKI' (meaning "Timing" in Japanese) to your UNIX terminal and shell scripts!"
 
 （日本語版は[こちら](README.ja.md)）
+
+## Table of Contents
+
+* [What is this?](#what-is-this)
+* [Highlights](#highlights)
+* [How to Build and Install](#how-to-build-and-install)
+* [Author / License](#author--license)
 
 ## What is this?
 
@@ -24,29 +41,43 @@ To solve the above problem, you can use `valve` command by the following.
 $ cat /PATH/TO/textdata_source | valve -l 1s
 ```
 
-Not only we can solve the problem but also we can make the shell script simpler!
+Not only we can solve the problem but also we can make the shell script simpler! Here's an actual recording comparing a naive `while`/`sleep` loop against `valve -l`, side by side. The naive loop (left) drifts by about +0.27s over 10 iterations, while `valve` (right) stays within about +0.02s.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/demo.gif" alt="naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s">
+</p>
 
 Several more commands are available.
 
-* [`calclock`](bin/calclock) ..... Convert bewteen the Calendar time and UNIX time
-* [`delay`](c_src/delay.c) ....... Delay each byte arriving from the standard input by a fixed amount of time
-* [`getfilets`](c_src/getfilets.c) Display timestamps (mtime, ctime, atime) of a file
-* [`herewego`](c_src/herewego.c) . Sleep Until a Nice Round Time and Tell the Time
-* [`linets`](c_src/linets.c) ..... Add timestamp to every line of text data
-* [`oobleck`](c_src/oobleck.c) ... Output Lines Only When the Next Line Does Not Arrive for a While
-* [`ptw`](c_src/ptw.c) ........... A command wrapper to prevent a command from full-buffering (alternative of [stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation), see [this](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.en.md) for details)
-* [`qvalve`](c_src/qvalve.c) ..... Quantitative Valve for the UNIX Pipeline
-* [`relval`](c_src/relval.c) ..... Limit the Flow Rate of the UNIX Pipeline Like a Relief Valve
-* [`sleep`](c_src/sleep.c) ....... Sleep command which supports sleeping during less than a second (POSIX compliant)
-* [`surgetk`](c_src/surgetk.c) ... Absorb a temporary burst on the standard input into a buffer, like a surge tank
-* [`tscat`](c_src/tscat.c) ....... Output each line at the data and time which is written in the top of the line
-* [`tshead`](c_src/tshead.c) ..... Cut out lines up to a given time, based on the timestamp in each line
-* [`tstail`](c_src/tstail.c) ..... Cut out lines from a given time onward, based on the timestamp in each line
-* [`typeliner`](c_src/typeliner.c) Make a Line of a Bunch of Key Types
-* [`valve`](c_src/valve.c) ....... Adjust the Data Transfer Rate in the UNIX Pipeline
-* [`waitill`](c_src/waitill.c) ... Sleep until a deadline (a point in time) instead of for a duration
+| Command | Description |
+|---|---|
+| [`calclock`](manual/calclock.man.en.md) | Convert bewteen the Calendar time and UNIX time |
+| [`delay`](manual/delay.man.en.md) | Delay each byte arriving from the standard input by a fixed amount of time |
+| [`getfilets`](manual/getfilets.man.en.md) | Display timestamps (mtime, ctime, atime) of a file |
+| [`herewego`](manual/herewego.man.en.md) | Sleep Until a Nice Round Time and Tell the Time |
+| [`linets`](manual/linets.man.en.md) | Add timestamp to every line of text data |
+| [`oobleck`](manual/oobleck.man.en.md) | Output Lines Only When the Next Line Does Not Arrive for a While |
+| [`ptw`](manual/ptw.man.en.md) | A command wrapper to prevent a command from full-buffering (alternative of [stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation), see [this](manual/ptw.info.en.md) for details) |
+| [`qvalve`](manual/qvalve.man.en.md) | Quantitative Valve for the UNIX Pipeline |
+| [`relval`](manual/relval.man.en.md) | Limit the Flow Rate of the UNIX Pipeline Like a Relief Valve |
+| [`sleep`](manual/sleep.man.en.md) | Sleep command which supports sleeping during less than a second (POSIX compliant) |
+| [`surgetk`](manual/surgetk.man.en.md) | Absorb a temporary burst on the standard input into a buffer, like a surge tank |
+| [`tscat`](manual/tscat.man.en.md) | Output each line at the data and time which is written in the top of the line |
+| [`tshead`](manual/tshead.man.en.md) | Cut out lines up to a given time, based on the timestamp in each line |
+| [`tstail`](manual/tstail.man.en.md) | Cut out lines from a given time onward, based on the timestamp in each line |
+| [`typeliner`](manual/typeliner.man.en.md) | Make a Line of a Bunch of Key Types |
+| [`valve`](manual/valve.man.en.md) | Adjust the Data Transfer Rate in the UNIX Pipeline |
+| [`waitill`](manual/waitill.man.en.md) | Sleep until a deadline (a point in time) instead of for a duration |
 
-To see the usages for the commands, build the command and run them with the option `--help`.
+To see the usages for the commands, build the command and run them with the option `--help`. For more in-depth articles on how to combine these commands and the design background, see the [`manual/`](manual/) directory (available in both English and Japanese).
+
+## Highlights
+
+* **Nanosecond precision** — record and compare byte- and line-level arrival times with nanosecond precision.
+* **Verified on 7 operating systems** — built and tested on real Linux, Solaris, FreeBSD, NetBSD, OpenBSD, macOS, and Android machines. The C sources conform to POSIX.1-2008 and absorb each OS's quirks.
+* **Zero dependencies** — one command, one self-contained C source file. No external libraries required to build.
+* **Public domain** — use it under CC0 or the Unlicense, whichever you prefer.
+* **Thorough bilingual documentation** — a manual for every one of the 17 commands, plus in-depth articles explaining how to combine them and why they're designed the way they are.
 
 ## How to Build and Install
 

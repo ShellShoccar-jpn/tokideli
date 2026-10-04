@@ -1,8 +1,25 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/logo.svg" width="520" alt="tokideli">
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-public_domain-blue"></a>
+  <img alt="Tested on 7 platforms" src="https://img.shields.io/badge/tested_on-Linux_Solaris_FreeBSD_NetBSD_OpenBSD_macOS_Android-informational">
+</p>
+
 # トキデリ
 
-あなたのシェルスクリプトに高品質な「時」をデリバリー！
+たとえシェルスクリプトからでも、完璧なタイミング制御を実現できる軽量POSIX準拠コマンド集
+「あなたのシェルスクリプトに、正確な『時』をデリバリー」
 
 (English version is [here](README.en.md))
+
+## 目次
+
+* [これは何？](#これは何)
+* [Highlights](#highlights)
+* [ビルド・インストール方法](#ビルドインストール方法)
+* [著者・ライセンス等](#著者ライセンス等)
 
 ## これは何？
 
@@ -26,29 +43,43 @@ done
 $ cat /PATH/TO/textdata_source | valve -l 1s
 ```
 
-解決できるうえに、何とシンプルな記述なのでしょう！
+解決できるうえに、何とシンプルな記述なのでしょう！　実際に素朴な`while`〜`sleep`ループと`valve -l`を並べて録画したものが以下です。左（素朴なループ）は10周でおよそ0.27秒もずれてしまうのに対し、右（`valve`）のずれはわずか0.02秒程度に収まっています。
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/demo.gif" alt="naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s">
+</p>
 
 これも含めて、いくつかのコマンドを用意しました。
 
-* [`calclock`](manual/calclock.man.ja.md) . カレンダー時間（年月日時分秒）とUNIX時間を相互変換する
-* [`delay`](manual/delay.man.ja.md) ....... 標準入力から到来した各バイトを一定時間だけ遅延させて標準出力に送る
-* [`getfilets`](manual/getfilets.man.ja.md) ファイルの mtime、ctime、atime を表示する
-* [`herewego`](manual/herewego.man.ja.md) . キリのいい時刻までsleepし、さらに目覚めた時刻を返す
-* [`linets`](manual/linets.man.ja.md) ..... 到来したテキストデータの各行の行頭に到来時刻付加する
-* [`oobleck`](manual/oobleck.man.ja.md) ... 一定時間内に次行が到来しない場合のみ、現在保持中の行を出力する
-* [`ptw`](manual/ptw.man.ja.md) ........... フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](https://github.com/ShellShoccar-jpn/tokideli/blob/main/manual/ptw.info.ja.md)）
-* [`qvalve`](manual/qvalve.man.ja.md) ..... 定量弁：データを指定された時に指定された量だけ出力
-* [`relval`](manual/relval.man.ja.md) ..... 逃し弁のようにして、行の転送レートを一定以下に保つ
-* [`sleep`](manual/sleep.man.ja.md) ....... 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装）
-* [`surgetk`](manual/surgetk.man.ja.md) ... サージタンクのように、一時的なバースト入力をバッファーに吸収して平滑に出力する
-* [`tscat`](manual/tscat.man.ja.md) ....... 各行行頭に記された時刻に従って行毎にデータを出力する
-* [`tshead`](manual/tshead.man.ja.md) ..... 行頭のタイムスタンプを基準に、指定時刻以前の行だけを先頭から切り出す
-* [`tstail`](manual/tstail.man.ja.md) ..... 行頭のタイムスタンプを基準に、指定時刻以降の行だけを末尾から切り出す
-* [`typeliner`](manual/typeliner.man.ja.md) ひとまとまりのキータイプ文字列を1行にする
-* [`valve`](manual/valve.man.ja.md) ....... 1バイトごと、または1行ごとにデータを一定間隔で出力する
-* [`waitill`](manual/waitill.man.ja.md) ... 長さではなく期限（時刻）を指定してスリープする
+| コマンド | 概要 |
+|---|---|
+| [`calclock`](manual/calclock.man.ja.md) | カレンダー時間（年月日時分秒）とUNIX時間を相互変換する |
+| [`delay`](manual/delay.man.ja.md) | 標準入力から到来した各バイトを一定時間だけ遅延させて標準出力に送る |
+| [`getfilets`](manual/getfilets.man.ja.md) | ファイルの mtime、ctime、atime を表示する |
+| [`herewego`](manual/herewego.man.ja.md) | キリのいい時刻までsleepし、さらに目覚めた時刻を返す |
+| [`linets`](manual/linets.man.ja.md) | 到来したテキストデータの各行の行頭に到来時刻付加する |
+| [`oobleck`](manual/oobleck.man.ja.md) | 一定時間内に次行が到来しない場合のみ、現在保持中の行を出力する |
+| [`ptw`](manual/ptw.man.ja.md) | フルバッファリングを回避するためのコマンド（[stdbuf](https://www.gnu.org/software/coreutils/manual/html_node/stdbuf-invocation.html#stdbuf-invocation)の代替品、詳細は[こちら](manual/ptw.info.ja.md)） |
+| [`qvalve`](manual/qvalve.man.ja.md) | 定量弁：データを指定された時に指定された量だけ出力 |
+| [`relval`](manual/relval.man.ja.md) | 逃し弁のようにして、行の転送レートを一定以下に保つ |
+| [`sleep`](manual/sleep.man.ja.md) | 秒未満の指定に対応したsleepコマンド（POSIXの範囲での実装） |
+| [`surgetk`](manual/surgetk.man.ja.md) | サージタンクのように、一時的なバースト入力をバッファーに吸収して平滑に出力する |
+| [`tscat`](manual/tscat.man.ja.md) | 各行行頭に記された時刻に従って行毎にデータを出力する |
+| [`tshead`](manual/tshead.man.ja.md) | 行頭のタイムスタンプを基準に、指定時刻以前の行だけを先頭から切り出す |
+| [`tstail`](manual/tstail.man.ja.md) | 行頭のタイムスタンプを基準に、指定時刻以降の行だけを末尾から切り出す |
+| [`typeliner`](manual/typeliner.man.ja.md) | ひとまとまりのキータイプ文字列を1行にする |
+| [`valve`](manual/valve.man.ja.md) | 1バイトごと、または1行ごとにデータを一定間隔で出力する |
+| [`waitill`](manual/waitill.man.ja.md) | 長さではなく期限（時刻）を指定してスリープする |
 
-各コマンドの使用法を見たい場合は、各コマンドをビルドした上で `--help` オプションを付けて実行してください。
+各コマンドの使用法を見たい場合は、各コマンドをビルドした上で `--help` オプションを付けて実行してください。また、組み合わせ方の具体例や設計の背景について、より詳しく書かれた読み物も[`manual/`](manual/)ディレクトリーに揃えています（日英両言語）。
+
+## Highlights
+
+* **ナノ秒精度** — バイト単位・行単位の到来時刻をナノ秒精度で記録・比較できる。
+* **7つのOSで動作確認済み** — Linux、Solaris、FreeBSD、NetBSD、OpenBSD、macOS、Android上で実機ビルド・動作確認を実施。各OS固有の癖を吸収したPOSIX.1-2008準拠のCソースを採用。
+* **依存ライブラリ無し** — 1コマンド＝1つのCソースファイルで完結。ビルドに特別な外部ライブラリは不要。
+* **パブリックドメイン** — CC0 / Unlicenseのいずれでも。好きなように使ってください。
+* **充実した日英バイリンガルドキュメント** — 全17コマンドにマニュアルがあり、組み合わせ方や設計背景を解説する読み物記事も用意。
 
 ## ビルド・インストール方法
 
