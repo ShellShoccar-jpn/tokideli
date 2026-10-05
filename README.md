@@ -84,8 +84,8 @@ Now, including these, here's the full list of the 17 commands we've prepared.
 | [`sleep`](manual/sleep.man.en.md) | Sleep command which supports sleeping during less than a second (POSIX compliant) |
 | [`surgetk`](manual/surgetk.man.en.md) | Absorb a temporary burst on the standard input into a buffer, like a surge tank |
 | [`tscat`](manual/tscat.man.en.md) | Output each line at the data and time which is written in the top of the line |
-| [`tshead`](manual/tshead.man.en.md) | Cut out lines up to a given time, based on the timestamp in each line |
-| [`tstail`](manual/tstail.man.en.md) | Cut out lines from a given time onward, based on the timestamp in each line |
+| [`tshead`](manual/tshead.man.en.md) | Cut out lines from the beginning, up to a certain period past the first line's timestamp, or up to a specified time |
+| [`tstail`](manual/tstail.man.en.md) | Cut out lines up to the end, from a certain period before the last line's timestamp, or from a specified time onward |
 | [`typeliner`](manual/typeliner.man.en.md) | Make a Line of a Bunch of Key Types |
 | [`valve`](manual/valve.man.en.md) | Adjust the Data Transfer Rate in the UNIX Pipeline |
 | [`waitill`](manual/waitill.man.en.md) | Sleep until a deadline (a point in time) instead of for a duration |
