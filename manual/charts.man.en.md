@@ -95,14 +95,14 @@ yields exactly 11 records — one per character, including the two `\n` characte
 If the input contains a byte sequence that is not valid under the current locale (i.e. `mbrtowc()` reports an encoding error), this command prints a warning to standard error, treats only the first byte of that sequence as a one-byte character (emitting it as-is), and resumes decoding from the very next byte. It never aborts the whole command over a single bad byte, so a long-running pipe keeps working even if it occasionally receives malformed data.
 
 ```sh:
-$ printf 'AB\xffCD\n' | LC_ALL=ja_JP.UTF-8 charts -e
+$ printf 'AB\377CD\n' | LC_ALL=ja_JP.UTF-8 charts -6e
+1791203545.280917 A
+1791203545.280927 B
 charts: an invalid byte (0xff) was replaced with a 1-byte character
-1700000000 A
-1700000000 B
-1700000000 (the raw 0xff byte, as-is)
-1700000000 C
-1700000000 D
-1700000000 
+1791203545.280957 (the raw 0xff byte, as-is)
+1791203545.280962 C
+1791203545.280967 D
+1791203545.280972 
 ```
 
 A particularly common way to end up seeing a long cascade of these warnings — one for every single byte of otherwise perfectly valid multibyte text — is requesting a locale that isn't actually installed on the system (e.g. `LC_ALL=ja_JP.UTF-8` when that locale was never generated). `setlocale()` fails silently in that case, leaving the "C" locale in effect, under which no byte above 0x7F is a valid character at all. When this command detects that `setlocale()` failed, it prints a warning about that specific problem before any of the per-byte ones, so if you see it, check which locales are actually installed (`locale -a`) rather than assuming the input data itself is broken.
@@ -119,11 +119,11 @@ charts: an invalid byte (0xe3) was replaced with a 1-byte character
 If the input stream ends in the middle of a multibyte character (i.e. there are not enough bytes left to complete it), this command prints a warning to standard error, outputs whatever incomplete bytes remain as the final record, and still exits with status 0 — the same as a clean end of file.
 
 ```sh:
-$ printf 'AB\xe3\x81' | LC_ALL=ja_JP.UTF-8 charts -e
+$ printf 'AB\343\201' | LC_ALL=ja_JP.UTF-8 charts -6e
+1791203545.282152 A
+1791203545.282160 B
 charts: an incomplete multibyte character (2 byte(s)) was cut off by EOF; flushing it as the last character
-1700000000 A
-1700000000 B
-1700000000 (the 2 leftover bytes, as-is)
+1791203545.282185 (the 2 leftover bytes, as-is)
 ```
 
 ## Return Value
@@ -170,6 +170,15 @@ $ tscat -ey -Z < recorded.txt
 This command can display timestamps down to nanosecond precision, but that does not mean the time shown is always accurate to that precision. How accurate it actually is depends on the state of the OS and the performance of the hardware.
 
 Decoding multibyte characters (when -b is not given) depends on the platform's `mbrtowc()`/locale support.
+
+Cross-platform testing surfaced two platform-specific quirks around the `setlocale()`-failure warning described under [Invalid Byte Sequences](#invalid-byte-sequences):
+
+* On Solaris, the `/bin/sh` shell itself appears to pre-validate an inline `LC_ALL=name command` assignment and silently discards an unrecognized locale name rather than passing it through to the program at all. The warning only shows up reliably there when the environment variable is set through a mechanism that bypasses this shell-level check (e.g. `env LC_ALL=name command`).
+* On OpenBSD, `setlocale(LC_CTYPE, "")` was observed to always succeed (it never returns NULL), even for a completely made-up locale name — its actual multibyte decoding behavior is apparently driven simply by whether the locale name contains the substring "UTF-8", not by looking up any real locale database. As a result, the `setlocale()`-failure warning can never fire on OpenBSD. This does not cause data loss or a crash, though: when the resulting decoding doesn't actually understand multibyte sequences, each byte is still correctly emitted as its own one-byte character, exactly as described under [Invalid Byte Sequences](#invalid-byte-sequences) — only the diagnostic itself is unavailable on this one platform.
+
+(Build and behavior verified on Solaris 11.3, FreeBSD 12.1, NetBSD 7.0.2, and OpenBSD 6.5, in addition to Linux.)
+
+On Android (Bionic libc, confirmed via Termux), there is no standard way to make `mbrtowc()` actually switch to single-byte processing at all, even by requesting the "C" locale: `MB_CUR_MAX` is a hardcoded macro (`#define MB_CUR_MAX 4`) that does not vary with the current locale, and `setlocale(LC_CTYPE, "C")` itself reports back `"C.UTF-8"` rather than honoring the plain `"C"` request. In other words, Bionic's multibyte decoding is effectively always UTF-8, regardless of `LC_ALL`/`LC_CTYPE`/`LANG`. If you need genuine byte-by-byte processing on Android, use the -b option — it bypasses `setlocale()`/`mbrtowc()` entirely, so it is unaffected by this platform limitation.
 
 ## Compliance with Standards
 
