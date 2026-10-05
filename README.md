@@ -48,7 +48,27 @@ Not only we can solve the problem but also we can make the shell script simpler!
   <sub>Script used to reproduce this recording: <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.sh">demo.sh</a> / <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.tape">demo.tape</a> (the <a href="https://github.com/charmbracelet/vhs">vhs</a> recording recipe)</sub>
 </p>
 
-Several more commands are available.
+Not only can you output data at a precise interval, you can also perform arbitrary processing at a precise interval. For example, the following shell script lets you hit a web page roughly every 3 seconds.
+
+```sh:
+yes | valve -l 3s | while IFS= read -r dummy; do
+  curl https://api.example.com/SOME/ENDPOINT
+done
+```
+
+Isn't it interesting how the `yes` command gains a new value as a pulse generator?
+
+One caveat, though: `valve` tries to keep its own output paced on an absolute time schedule. So if `curl` occasionally takes longer than 3 seconds, whatever built up in the pipe during that time gets flushed out all at once (practically simultaneously) the moment processing catches up. If you want to strictly honor a rate limit — that is, avoid this kind of burst — use the [`herewego`](manual/herewego.man.en.md) command instead.
+
+```sh:
+while herewego 3s >/dev/null; do
+  curl https://api.example.com/SOME/ENDPOINT
+done
+```
+
+If processing happens to run long and `herewego` misses one nice round time, it doesn't try to make up for it afterward — it just waits for the next nice round time before resuming. So no matter how much `curl`'s duration fluctuates, you'll never get a burst.
+
+Now, including this one, here's the full list of the 17 commands we've prepared.
 
 | Command | Description |
 |---|---|

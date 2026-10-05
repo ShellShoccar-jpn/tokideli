@@ -50,7 +50,27 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
   <sub>この録画を再現するスクリプト: <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.sh">demo.sh</a> / <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.tape">demo.tape</a>（<a href="https://github.com/charmbracelet/vhs">vhs</a>の録画レシピ）</sub>
 </p>
 
-これも含めて、いくつかのコマンドを用意しました。
+正確な時間間隔でデータ出力できるのみならず、正確な時間間隔で任意の処理もできるようになります。例えば次のようなシェルスクリプトを書けば、およそ3秒間隔でWebページにアクセスできます。
+
+```sh:
+yes | valve -l 3s | while IFS= read -r dummy; do
+  curl https://api.example.com/SOME/ENDPOINT
+done
+```
+
+yesコマンドが、パルス発生源として新たな価値を持つようになるのも興味深くありませんか？
+
+ただし一点注意が必要です。`valve`は自分自身の出力ペースを絶対時刻基準で維持しようとするため、`curl`の処理が一時的に3秒を超過すると、その間に溜まった分がパイプに蓄積し、処理が再開した瞬間にまとめて（ほぼ同時に）流れ出てしまいます。レートリミットを厳密に守りたい、つまりこのようなバーストを避けたい場合は、代わりに[`herewego`](manual/herewego.man.ja.md)コマンドを使うとよいでしょう。
+
+```sh:
+while herewego 3s >/dev/null; do
+  curl https://api.example.com/SOME/ENDPOINT
+done
+```
+
+`herewego`は、処理が一時的に長引いてキリのいい時刻を一つ逃しても、その分を後から取り戻そうとはせず、次のキリのいい時刻まで待ってから再開します。そのため、`curl`の処理時間がどれだけ揺らいでも、バーストが起きることはありません。
+
+さて、このコマンドも含め、17個のコマンドを用意しましたので一覧にします。
 
 | コマンド | 概要 |
 |---|---|
