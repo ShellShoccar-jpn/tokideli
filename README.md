@@ -68,11 +68,12 @@ done
 
 If processing happens to run long and `herewego` misses one nice round time, it doesn't try to make up for it afterward — it just waits for the next nice round time before resuming. So no matter how much `curl`'s duration fluctuates, you'll never get a burst.
 
-Now, including these, here's the full list of the 17 commands we've prepared.
+Now, including these, here's the full list of the 18 commands we've prepared.
 
 | Command | Description |
 |---|---|
 | [`calclock`](manual/calclock.man.en.md) | Convert bewteen the Calendar time and UNIX time |
+| [`charts`](manual/charts.man.en.md) | Add timestamp to every character of text data |
 | [`delay`](manual/delay.man.en.md) | Delay each byte arriving from the standard input by a fixed amount of time |
 | [`getfilets`](manual/getfilets.man.en.md) | Display timestamps (mtime, ctime, atime) of a file |
 | [`herewego`](manual/herewego.man.en.md) | Sleep Until a Nice Round Time and Tell the Time |
@@ -98,7 +99,7 @@ To see the usages for the commands, build the command and run them with the opti
 * **Verified on 7 operating systems** — built and tested on real Linux, Solaris, FreeBSD, NetBSD, OpenBSD, macOS, and Android machines. The C sources conform to POSIX.1-2008 and absorb each OS's quirks.
 * **Zero dependencies** — one command, one self-contained C source file. No external libraries required to build.
 * **Public domain** — use it under CC0 or the Unlicense, whichever you prefer.
-* **Thorough bilingual documentation** — a manual for every one of the 17 commands, plus in-depth articles explaining how to combine them and why they're designed the way they are.
+* **Thorough bilingual documentation** — a manual for every one of the 18 commands, plus in-depth articles explaining how to combine them and why they're designed the way they are.
 
 ## How to Build and Install
 

@@ -121,6 +121,15 @@ world!⏎         ← type this, then press [Ctrl]+[D]
 
 See the [typeliner(1)](typeliner.man.en.md) manual for details.
 
+Alternatively, [charts(1)](charts.man.en.md) — which attaches a timestamp to every character of a text stream, one character per line — produces output in exactly this same shape (and, for the same reason, emits an empty payload for a record whose character is a literal `\n`). So `charts`' output can be fed straight into `tscat -y`, without needing [typeliner(1)](typeliner.man.en.md)/[linets(1)](linets.man.en.md) at all, to reconstruct both the original text and its original character-by-character timing.
+
+```sh:
+$ charts -3e > recorded.txt
+(type some characters, then press [Ctrl]+[D])
+$ tscat -ey -Z recorded.txt
+(your typing from a moment ago is replayed on the screen)
+```
+
 ### -p *n*
 
 (Only on OSes supporting _POSIX_PRIORITY_SCHEDULING) Process priority setting. To improve the accuracy of the nanosleep() function used to adjust the data transfer rate, setting *n* to 2 or 3 raises the process priority. *n* ranges over four levels from 0 to 3, and the default is 1.
@@ -185,4 +194,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[linets(1)](linets.man.en.md), [LINETS & TSCAT tutorial](linets_and_tscat.en.md), [typeliner(1)](typeliner.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md)
+[linets(1)](linets.man.en.md), [LINETS & TSCAT tutorial](linets_and_tscat.en.md), [typeliner(1)](typeliner.man.en.md), [charts(1)](charts.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md)

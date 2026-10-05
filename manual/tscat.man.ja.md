@@ -121,6 +121,15 @@ world!⏎         ← このようにタイプした後、[Ctrl]+[D]を押す
 
 詳細は、[typeliner(1)](typeliner.man.ja.md)コマンドのマニュアルを参照してください。
 
+あるいは、テキストストリームの各文字にタイムスタンプを付加し1文字ずつ1行として出力する[charts(1)](charts.man.ja.md)コマンドを使えば、同じ理由（改行文字そのものを表すレコードはペイロードが空になる）により、全く同じ形式のデータを得られます。したがって、[typeliner(1)](typeliner.man.ja.md)・[linets(1)](linets.man.ja.md)の組み合わせを使わずとも、`charts`の出力をそのまま`tscat -y`に渡すだけで、元のテキストと文字単位の到来タイミングの両方を復元できます。
+
+```sh:
+$ charts -3e > recorded.txt
+（文字をタイプした後、最後に[Ctrl]+[D]を押す）
+$ tscat -ey -Z recorded.txt
+（先程のタイピングの様子が画面に再現される）
+```
+
 ### -p *n*
 
 （_POSIX_PRIORITY_SCHEDULINGをサポートしているOS限定）プロセス優先度設定。データ転送レート調整に用いるnanosleep()関数の動作精度を上げるため、このオプションの*n*値を2または3にすれば、プロセス優先度が上がります。*n*の範囲は0から3の4段階で、1がデフォルトです。
@@ -184,4 +193,4 @@ BEGIN {
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)
+[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[charts(1)](charts.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)
