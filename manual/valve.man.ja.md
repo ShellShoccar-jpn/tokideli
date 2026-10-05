@@ -143,10 +143,20 @@ $ cat > faucet
 ```sh:
 awk 'BEGIN{for(i=0;i<100;i++){print i}}' |
 valve -l 1s                              |
-while read i; do
+while IFS= read -r i; do
   （ここで何らかの処理）
 done
 ```
+
+正確な周期で任意の処理を行う、より具体的な例として、およそ3秒間隔でWebページにアクセスする。
+
+```sh:
+$ yes | valve -l 3s | while IFS= read -r dummy; do
+    curl https://api.example.com/SOME/ENDPOINT
+  done
+```
+
+ただし注意が必要である。本コマンドは自分自身の出力ペースを絶対時刻基準で維持しようとするため、`curl`の処理が一時的に3秒を超過すると、その間に溜まった分がパイプに蓄積し、処理が再開した瞬間にまとめて（ほぼ同時に）送出されてしまう。レートリミットを厳密に守りたい、つまりこのようなバーストを避けたい場合は、代わりに[herewego(1)](herewego.man.ja.md)コマンドを使うとよい。
 
 ## バグ
 

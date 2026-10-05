@@ -68,7 +68,7 @@ done
 
 If processing happens to run long and `herewego` misses one nice round time, it doesn't try to make up for it afterward — it just waits for the next nice round time before resuming. So no matter how much `curl`'s duration fluctuates, you'll never get a burst.
 
-Now, including this one, here's the full list of the 17 commands we've prepared.
+Now, including these, here's the full list of the 17 commands we've prepared.
 
 | Command | Description |
 |---|---|

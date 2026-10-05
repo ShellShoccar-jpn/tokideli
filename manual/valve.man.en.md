@@ -143,10 +143,20 @@ In a shell script, build a loop that repeats 100 times at a 1-second period, mor
 ```sh:
 awk 'BEGIN{for(i=0;i<100;i++){print i}}' |
 valve -l 1s                              |
-while read i; do
+while IFS= read -r i; do
   (some processing here)
 done
 ```
+
+As a more concrete example of doing arbitrary processing at a precise interval, hit a web page roughly every 3 seconds.
+
+```sh:
+$ yes | valve -l 3s | while IFS= read -r dummy; do
+    curl https://api.example.com/SOME/ENDPOINT
+  done
+```
+
+One caveat, though: this command tries to keep its own output paced on an absolute time schedule. So if `curl` occasionally takes longer than 3 seconds, whatever built up in the pipe during that time gets sent out all at once (practically simultaneously) the moment processing catches up. If you want to strictly honor a rate limit — that is, avoid this kind of burst — use the [herewego(1)](herewego.man.en.md) command instead.
 
 ## Bugs
 

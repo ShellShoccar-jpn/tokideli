@@ -98,6 +98,16 @@ Display the current time down to microsecond precision, in extended ISO 8601 for
 $ TZ=JST-9 herewego -6I 0
 ```
 
+Hit a web page roughly every 3 seconds while doing some processing in a loop.
+
+```sh:
+$ while herewego 3s >/dev/null; do
+    curl https://api.example.com/SOME/ENDPOINT
+  done
+```
+
+You can do something similar with [valve(1)](valve.man.en.md)'s `-l` option, but `valve` tries to keep its own output paced on an absolute time schedule, so if `curl` occasionally takes longer than 3 seconds, whatever built up during that time gets sent out all at once (practically simultaneously), i.e. a burst. With this command, if processing happens to run long and it misses one nice round time, it doesn't try to make up for it afterward — it just waits for the next nice round time before resuming, so this kind of burst never happens. If you need to strictly honor a rate limit, this command is a better fit than `valve`.
+
 ## Bugs
 
 This command can set a nice round time down to nanosecond precision, and can display the exit time down to nanosecond precision as well, but that does not mean it can actually sleep or display the time with that exact precision in practice. How much precision can actually be achieved depends on the state of the OS and the performance of the hardware.
