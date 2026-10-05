@@ -21,7 +21,7 @@
 #             =forcible ... Line-buffered mode or exit if impossible
 #
 # Designed originally by Nobuaki Tounaka
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-07-17
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -64,8 +64,9 @@ print_usage_and_exit() {
 	Environs: LINE_BUFFERED
 	            =yes ........ Line-buffered mode if possible
 	            =forcible ... Line-buffered mode or exit if impossible
-	Version : 2026-07-17 18:43:04 JST
-	          Open usp Tukubai (POSIX Bourne Shell/POSIX commands)
+	Version      : 1.0.0
+	Last Updated : 2026-10-06 00:55:00 JST
+	               Open usp Tukubai (POSIX Bourne Shell/POSIX commands)
 	USAGE
   exit 1
 }
@@ -80,6 +81,10 @@ error_exit() {
 ######################################################################
 
 # === Get the options and the filepath ===============================
+# --- handle "--version" before anything else -------------------------
+case "${1:-}" in
+  --version) printf '%s (tokideli) 1.0.0\n' "${0##*/}"; exit 0;;
+esac
 # --- initialize option parameters -----------------------------------
 directmode=0
 directstr=''

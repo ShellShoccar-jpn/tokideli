@@ -105,7 +105,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-02
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -124,7 +124,7 @@
 ####################################################################*/
 
 /*=== Initial Setting ==============================================*/
-#define MY_REV "2026-10-02 01:39:15 JST"
+#define MY_REV "2026-10-06 00:55:00 JST"
 
 /*--- headers ------------------------------------------------------*/
 /* Solaris 11.3's <sys/feature_tests.h> only recognizes the exact
@@ -339,8 +339,9 @@ void print_usage_and_exit(void) {
     "                        this command skip opening the 1st file just\n"
     "                        to read its first line, since the border no\n"
     "                        longer depends on it.\n"
-    "Version : " MY_REV "\n"
-    "          (POSIX C language)\n"
+    "Version      : 1.0.0\n"
+    "Last Updated : " MY_REV "\n"
+    "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
     "This is public domain software. (CC0)\n"
@@ -431,6 +432,11 @@ if (clock_gettime(CLOCK_REALTIME,&gtsZero) != 0) {
 gpszCmdname = argv[0];
 for (i=0; *(gpszCmdname+i)!='\0'; i++) {
   if (*(gpszCmdname+i)=='/') {gpszCmdname=gpszCmdname+i+1;}
+}
+
+if (argc>=2 && strcmp(argv[1],"--version")==0) {
+  printf("%s (tokideli) 1.0.0\n", gpszCmdname);
+  return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {
   error_exit(errno,"setenv() at initialization: %s\n", strerror(errno));

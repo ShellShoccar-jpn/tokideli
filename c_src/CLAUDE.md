@@ -95,13 +95,14 @@ case 'u': (void)setenv("TZ", "UTC", 1); break;
 - 関数末尾で `return 0;}` のように return文と閉じ波括弧を同一行にまとめる慣習がある（`getfilets.c:236`）。
 - **`case`ブロック中の1行を編集して文字数が変わった場合、その行だけでなく同じブロック内の`break;`が揃っている他の全行のパディングも桁が合うように調整すること。** 1行だけ直して他行を放置すると、その行だけ`break`の位置がずれて縦の桁揃えが崩れる。空きスペースに余裕があればそのペア行のスペースを増減するだけで直るが、余裕が無い場合はブロック全体の目標列を1つ右にずらし、他の行にも同じ分だけスペースを足すこと（詰めすぎて`);break;`のようにスペース0にはしない）。
 
-## 6. Usageバナーと `Version` タイムスタンプ
+## 6. Usageバナーの `Version` / `Last Updated` 行
 
-`print_usage_and_exit()` は `fprintf(stderr, ...)` でUsageを出力し、末尾近くに以下の形式で日時を含む（`sleep.c:40-57`）:
+`print_usage_and_exit()` は `fprintf(stderr, ...)` でUsageを出力し、末尾近くに以下の形式で2行を含む（`charts.c`参照。この規約は`cmd_scripts/*.sh`の`print_usage_and_exit()`ヘッドドックにも同様に適用される）:
 
 ```c
-"Version : 2024-06-23 13:28:01 JST\n"
-"          (POSIX C language)\n"
+"Version      : 1.0.0\n"
+"Last Updated : 2026-10-06 00:55:00 JST\n"
+"               (POSIX C language)\n"
 "\n"
 "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
 "This is public domain software. (CC0)\n"
@@ -110,9 +111,16 @@ case 'u': (void)setenv("TZ", "UTC", 1); break;
 "https://github.com/ShellShoccar-jpn/tokideli\n"
 ```
 
-**重要**: `Version : YYYY-MM-DD HH:MM:SS JST` は秒まで含むタイムスタンプ行である。ユーザーのグローバル指示により、このソースファイルを編集するたびに、この行を編集時点の現在日時(JST)へ必ず更新すること（頼まれなくても毎回行う）。
+この2行は意味が全く異なるので混同しないこと。
 
-**さらに重要**: ファイル冒頭バナーの `# Written by Shell-Shoccar Japan (@shellshoccarjpn) on YYYY-MM-DD`（`calclock.c`のようにシェルスクリプトのC移植版では `# Ported to C by ... on YYYY-MM-DD` という表記になる）の日付部分も、上記`Version`行を更新するたびに**同じ日付**（時刻部分を除いた`YYYY-MM-DD`のみ）へ必ず一致させること。`Version`だけ更新して`Written by`/`Ported to C by`を放置すると、2つの「最終更新日」表示が食い違ってしまうため、この2箇所は常にセットで更新する。
+- **`Version`**: プロジェクト全体のセマンティックバージョン（例: `1.0.0`）。全`c_src/*.c`・`cmd_scripts/*.sh`で共通の値であり、個々のファイルを編集しても変えてはならない。更新するのはリリース時のみで、`release/bump_version.sh`（保守者専用スクリプト。ルートの`VERSION`ファイルも同時に更新する）が一括で書き換える。
+- **`Last Updated`**: そのファイル個別の最終編集日時（`YYYY-MM-DD HH:MM:SS JST`、秒まで含む）。**こちらが旧`Version`行に相当するもの**で、ユーザーのグローバル指示により、このソースファイルを編集するたびに、この行を編集時点の現在日時(JST)へ必ず更新すること（頼まれなくても毎回行う）。`release/bump_version.sh`はこの行には一切触れない（バージョン番号を上げる操作自体は、そのファイルのロジックが変わったことを意味しないため）。
+
+2行の値を縦に揃えるため、`Version`側のラベルは`"Version      : "`（`Version`の後に半角スペース6個＋`: `）のようにパディングし、`"Last Updated : "`と同じ15文字幅に揃える。直後の注釈行（`(POSIX C language)`等）も、値の開始位置に揃えて15個の半角スペースでインデントする。
+
+**さらに重要**: ファイル冒頭バナーの `# Written by Shell-Shoccar Japan (@shellshoccarjpn) on YYYY-MM-DD`（`calclock.c`のようにシェルスクリプトのC移植版では `# Ported to C by ... on YYYY-MM-DD` という表記になる）の日付部分も、上記`Last Updated`行を更新するたびに**同じ日付**（時刻部分を除いた`YYYY-MM-DD`のみ）へ必ず一致させること。`Last Updated`だけ更新して`Written by`/`Ported to C by`を放置すると、2つの「最終更新日」表示が食い違ってしまうため、この2箇所は常にセットで更新する。
+
+なお、全コマンドは`--version`オプションにも対応している。`-v`が全ファイルで既に「verboseモード」に使われているため（`getopt_long`等のGNU拡張は使わない方針のため長短オプションの共存もできない）、`getopt()`呼び出しより前に`argv[1]`が文字列`"--version"`そのものかを素朴にチェックする前処理で対応する（`argc>=2 && strcmp(argv[1],"--version")==0`）。一致した場合は`"%s (tokideli) 1.0.0\n"`を出力して`return 0;`する。
 
 ## 7. include文
 
@@ -199,8 +207,9 @@ int main(int argc, char *argv[]) {
 
 - [ ] ファイル冒頭にCC0バナー（USAGE/Args/Retuen/How to compile/Written by/ライセンス文/URL）を書いたか
 - [ ] `print_usage_and_exit()` / `error_exit()` /（必要なら）`warning()` を複製実装したか
-- [ ] Usage出力内に `Version : YYYY-MM-DD HH:MM:SS JST` を含め、編集の都度更新したか
-- [ ] 冒頭バナーの `Written by`（または `Ported to C by`）の日付を、上記`Version`の日付と一致させたか
+- [ ] Usage出力内に `Version      : X.Y.Z`（プロジェクト全体のバージョン。個別ファイル編集時には変更しない）と `Last Updated : YYYY-MM-DD HH:MM:SS JST`（そのファイルの最終編集日時。編集の都度更新）の2行を、桁揃えして含めたか
+- [ ] 冒頭バナーの `Written by`（または `Ported to C by`）の日付を、上記`Last Updated`の日付と一致させたか
+- [ ] `--version`オプション（`argv[1]`が`"--version"`かを`getopt()`より前に素朴にチェックする前処理）に対応したか
 - [ ] 大/中/小の3階層セクションコメントで構成したか
 - [ ] 変数名がハンガリアン記法（型プレフィックス+PascalCase）に従っているか
 - [ ] グローバル変数に `g` プレフィックスを付け、冒頭にまとめたか

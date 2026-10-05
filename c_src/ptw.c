@@ -14,7 +14,7 @@
 #
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-09-24
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -102,8 +102,9 @@ void print_usage_and_exit(void) {
     "Retuen  : The return value will be decided by the wrapped command\n"
     "          when PTY wrapping has succeed. However, return a non-zero\n"
     "          number by this wrapper when failed.\n"
-    "Version : 2026-09-24 01:21:10 JST\n"
-    "          (POSIX C language with \"POSIX centric\" programming)\n"
+    "Version      : 1.0.0\n"
+    "Last Updated : 2026-10-06 00:55:00 JST\n"
+    "               (POSIX C language with \"POSIX centric\" programming)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
     "This is public domain software. (CC0)\n"
@@ -159,6 +160,11 @@ char*  psz;               /* all-purpose char*                      */
 gpszCmdname = argv[0];
 for (i=0; *(gpszCmdname+i)!='\0'; i++) {
   if (*(gpszCmdname+i)=='/') {gpszCmdname=gpszCmdname+i+1;}
+}
+
+if (argc>=2 && strcmp(argv[1],"--version")==0) {
+  printf("%s (tokideli) 1.0.0\n", gpszCmdname);
+  return 0;
 }
 giFd1m=-1;
 giFd1s=-1;

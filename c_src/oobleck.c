@@ -125,7 +125,7 @@
 #
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -pthread
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-02
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
 #
 # The latest version is distributed at the following page.
 # https://github.com/ShellShoccar-jpn/tokideli
@@ -388,8 +388,9 @@ void print_usage_and_exit(void) {
     "                        An administrative privilege might be required to\n"
     "                        use this option.\n"
 #endif
-    "Version : 2026-10-02 13:03:08 JST\n"
-    "          (POSIX C language)\n"
+    "Version      : 1.0.0\n"
+    "Last Updated : 2026-10-06 00:55:00 JST\n"
+    "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
     "This is public domain software. (CC0)\n"
@@ -448,6 +449,11 @@ thmaininfo_t stMainth;    /* Variables required in handler functions*/
 gpszCmdname = argv[0];
 for (i=0; *(gpszCmdname+i)!='\0'; i++) {
   if (*(gpszCmdname+i)=='/') {gpszCmdname=gpszCmdname+i+1;}
+}
+
+if (argc>=2 && strcmp(argv[1],"--version")==0) {
+  printf("%s (tokideli) 1.0.0\n", gpszCmdname);
+  return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {
   error_exit(errno,"setenv() at initialization: \n", strerror(errno));
