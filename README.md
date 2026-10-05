@@ -51,7 +51,7 @@ Not only we can solve the problem but also we can make the shell script simpler!
 Not only can you output data at a precise interval, you can also perform arbitrary processing at a precise interval. For example, as long as `curl`'s execution time is sufficiently shorter than 3 seconds, the following shell script lets you hit a web page at a precise 3-second interval.
 
 ```sh:
-yes | valve -l 3s | while IFS= read -r dummy; do
+yes | valve -l 3s | while read dummy; do
   curl https://api.example.com/SOME/ENDPOINT
 done
 ```

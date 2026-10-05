@@ -53,7 +53,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 正確な時間間隔でデータ出力できるのみならず、正確な時間間隔で任意の処理もできるようになります。例えば次のようなシェルスクリプトを書けば、`curl`の処理時間が3秒より十分短い限り、正確な3秒間隔でWebページにアクセスできます。
 
 ```sh:
-yes | valve -l 3s | while IFS= read -r dummy; do
+yes | valve -l 3s | while read dummy; do
   curl https://api.example.com/SOME/ENDPOINT
 done
 ```

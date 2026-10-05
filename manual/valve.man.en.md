@@ -151,7 +151,7 @@ done
 As a more concrete example of doing arbitrary processing at a precise interval: as long as `curl`'s execution time is sufficiently shorter than 3 seconds, this hits a web page at a precise 3-second interval.
 
 ```sh:
-$ yes | valve -l 3s | while IFS= read -r dummy; do
+$ yes | valve -l 3s | while read dummy; do
     curl https://api.example.com/SOME/ENDPOINT
   done
 ```

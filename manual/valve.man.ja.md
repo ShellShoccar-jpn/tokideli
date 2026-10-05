@@ -151,7 +151,7 @@ done
 正確な周期で任意の処理を行う、より具体的な例として、`curl`の処理時間が3秒より十分短い限り、正確な3秒間隔でWebページにアクセスする。
 
 ```sh:
-$ yes | valve -l 3s | while IFS= read -r dummy; do
+$ yes | valve -l 3s | while read dummy; do
     curl https://api.example.com/SOME/ENDPOINT
   done
 ```
