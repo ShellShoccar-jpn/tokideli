@@ -98,7 +98,7 @@ Display the current time down to microsecond precision, in extended ISO 8601 for
 $ TZ=JST-9 herewego -6I 0
 ```
 
-Hit a web page roughly every 3 seconds while doing some processing in a loop.
+Do some processing in a loop while hitting a web page at a precise 3-second interval, as long as `curl`'s execution time is sufficiently shorter than 3 seconds.
 
 ```sh:
 $ while herewego 3s >/dev/null; do

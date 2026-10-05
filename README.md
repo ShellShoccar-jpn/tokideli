@@ -48,7 +48,7 @@ Not only we can solve the problem but also we can make the shell script simpler!
   <sub>Script used to reproduce this recording: <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.sh">demo.sh</a> / <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.tape">demo.tape</a> (the <a href="https://github.com/charmbracelet/vhs">vhs</a> recording recipe)</sub>
 </p>
 
-Not only can you output data at a precise interval, you can also perform arbitrary processing at a precise interval. For example, the following shell script lets you hit a web page roughly every 3 seconds.
+Not only can you output data at a precise interval, you can also perform arbitrary processing at a precise interval. For example, as long as `curl`'s execution time is sufficiently shorter than 3 seconds, the following shell script lets you hit a web page at a precise 3-second interval.
 
 ```sh:
 yes | valve -l 3s | while IFS= read -r dummy; do

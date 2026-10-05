@@ -50,7 +50,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
   <sub>この録画を再現するスクリプト: <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.sh">demo.sh</a> / <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.tape">demo.tape</a>（<a href="https://github.com/charmbracelet/vhs">vhs</a>の録画レシピ）</sub>
 </p>
 
-正確な時間間隔でデータ出力できるのみならず、正確な時間間隔で任意の処理もできるようになります。例えば次のようなシェルスクリプトを書けば、およそ3秒間隔でWebページにアクセスできます。
+正確な時間間隔でデータ出力できるのみならず、正確な時間間隔で任意の処理もできるようになります。例えば次のようなシェルスクリプトを書けば、`curl`の処理時間が3秒より十分短い限り、正確な3秒間隔でWebページにアクセスできます。
 
 ```sh:
 yes | valve -l 3s | while IFS= read -r dummy; do

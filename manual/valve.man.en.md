@@ -148,7 +148,7 @@ while IFS= read -r i; do
 done
 ```
 
-As a more concrete example of doing arbitrary processing at a precise interval, hit a web page roughly every 3 seconds.
+As a more concrete example of doing arbitrary processing at a precise interval: as long as `curl`'s execution time is sufficiently shorter than 3 seconds, this hits a web page at a precise 3-second interval.
 
 ```sh:
 $ yes | valve -l 3s | while IFS= read -r dummy; do
