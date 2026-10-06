@@ -388,8 +388,9 @@ void print_usage_and_exit(void) {
     "                        An administrative privilege might be required to\n"
     "                        use this option.\n"
 #endif
+    "Package      : tokideli\n"
     "Version      : 1.0.0\n"
-    "Last Updated : 2026-10-06 00:55:00 JST\n"
+    "Last Updated : 2026-10-06 08:54:43 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"

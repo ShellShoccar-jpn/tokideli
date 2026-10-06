@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A `Package : tokideli` line in every command's `-h`/usage banner, shown
+  above the `Version` line, so a banner on its own makes clear which
+  project the command belongs to (matches the long-standing GNU-tool
+  `--version` convention of naming the parent package, e.g.
+  `sleep (GNU coreutils) 9.1`).
+
+### Changed
+
+- `calclock`'s (`c_src/calclock.c` and `cmd_scripts/calclock.sh`) banner
+  comments now note that it is also maintained, kept in sync, as part of
+  Open usp Tukubai, the project it originally came from. Its `Package`
+  line still reads `tokideli` only (not both names together), since the
+  `Version` line right below it follows tokideli's own release numbering,
+  which increases independently of Open usp Tukubai's.
+
 ## [1.0.0] - 2026-10-06
 
 ### Added

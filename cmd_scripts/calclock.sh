@@ -22,6 +22,7 @@
 #
 # Designed originally by Nobuaki Tounaka
 # Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
+# Also maintained, kept in sync, as part of Open usp Tukubai
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -64,8 +65,9 @@ print_usage_and_exit() {
 	Environs: LINE_BUFFERED
 	            =yes ........ Line-buffered mode if possible
 	            =forcible ... Line-buffered mode or exit if impossible
+	Package      : tokideli
 	Version      : 1.0.0
-	Last Updated : 2026-10-06 00:55:00 JST
+	Last Updated : 2026-10-06 08:54:43 JST
 	               Open usp Tukubai (POSIX Bourne Shell/POSIX commands)
 	USAGE
   exit 1

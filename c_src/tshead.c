@@ -112,7 +112,7 @@
 ####################################################################*/
 
 /*=== Initial Setting ==============================================*/
-#define MY_REV "2026-10-06 00:55:00 JST"
+#define MY_REV "2026-10-06 08:54:43 JST"
 
 /*--- headers ------------------------------------------------------*/
 /* Solaris 11.3's <sys/feature_tests.h> only recognizes the exact
@@ -286,6 +286,7 @@ void print_usage_and_exit(void) {
     "                        reference point (see \"-z\" above) for the\n"
     "                        \"-z\" format. For any other pattern, \"-Z\"\n"
     "                        is silently ignored.\n"
+    "Package      : tokideli\n"
     "Version      : 1.0.0\n"
     "Last Updated : " MY_REV "\n"
     "               (POSIX C language)\n"

@@ -124,7 +124,7 @@
 ####################################################################*/
 
 /*=== Initial Setting ==============================================*/
-#define MY_REV "2026-10-06 00:55:00 JST"
+#define MY_REV "2026-10-06 08:54:43 JST"
 
 /*--- headers ------------------------------------------------------*/
 /* Solaris 11.3's <sys/feature_tests.h> only recognizes the exact
@@ -339,6 +339,7 @@ void print_usage_and_exit(void) {
     "                        this command skip opening the 1st file just\n"
     "                        to read its first line, since the border no\n"
     "                        longer depends on it.\n"
+    "Package      : tokideli\n"
     "Version      : 1.0.0\n"
     "Last Updated : " MY_REV "\n"
     "               (POSIX C language)\n"

@@ -59,6 +59,7 @@
 #
 # Designed originally by Nobuaki Tounaka
 # Ported to C by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
+# Also maintained, kept in sync, as part of Open usp Tukubai
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -240,11 +241,13 @@ void print_usage_and_exit(void) {
     "          \"xxxxxxxxxxxxxx\") is inserted as the converted value, and\n"
     "          processing continues.\n"
     "\n"
+    "Package      : tokideli\n"
     "Version      : 1.0.0\n"
-    "Last Updated : 2026-10-06 00:55:00 JST\n"
+    "Last Updated : 2026-10-06 08:54:43 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Designed originally by Nobuaki Tounaka\n"
+    "Also maintained, kept in sync, as part of Open usp Tukubai\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
     "This is public domain software. (CC0)\n"
     "\n"

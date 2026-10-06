@@ -227,8 +227,9 @@ void print_usage_and_exit(void) {
     "                        Larger numbers maybe require a privileged user,\n"
     "                        but if failed, it will try the smaller numbers.\n"
 #endif
+    "Package      : tokideli\n"
     "Version      : 1.0.0\n"
-    "Last Updated : 2026-10-06 00:55:00 JST\n"
+    "Last Updated : 2026-10-06 08:54:43 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
