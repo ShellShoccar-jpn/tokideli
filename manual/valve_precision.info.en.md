@@ -147,3 +147,7 @@ A few observations follow from this data.
 
 * Unlike pv, whose rate limiting depends on coarse polling cycles, valve directly computes the absolute time at which the next block should be sent and calls `nanosleep()` against it, achieving roughly an order of magnitude better precision in the same environment (standard deviation 0.288ms vs. 3.573ms, measured at a 1-second period).
 * Even so, valve's precision cannot escape a few-hundred-microsecond-order of fixed noise arising from OS scheduling and interrupt handling. Since this fixed noise stays roughly constant regardless of the period length, the relative error grows larger for shorter periods. In practice, it is advisable to use valve with an awareness of the balance between the precision required and the length of the period being used.
+
+## See Also
+
+[valve(1)](valve.man.en.md), [Using the valve Command as a Square-Wave Generator on a Raspberry Pi](valve_as_wave_generator_on_raspi.info.en.md)

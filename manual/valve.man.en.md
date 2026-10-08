@@ -169,3 +169,7 @@ The -p option may help improve the precision.
 ## Compliance with Standards
 
 The source code of this command is written to conform to C99 and IEEE Std 1003.1-2008 ("POSIX.1").
+
+## See Also
+
+[herewego(1)](herewego.man.en.md), [Report on the Transfer-Rate Precision of the valve Command](valve_precision.info.en.md), [Using the valve Command as a Square-Wave Generator on a Raspberry Pi](valve_as_wave_generator_on_raspi.info.en.md)

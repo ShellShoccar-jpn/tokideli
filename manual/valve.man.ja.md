@@ -169,3 +169,7 @@ $ yes | valve -l 3s | while read dummy; do
 ## 規格への準拠
 
 このコマンドのソースコードはC99、IEEE Std 1003.1-2008（“POSIX.1”）に準拠させてあります。
+
+## 関連項目
+
+[herewego(1)](herewego.man.ja.md)、[valveコマンドの転送レート精度に関するレポート](valve_precision.info.ja.md)、[valveコマンドをRaspberry Pi上で方形波発生器として使う](valve_as_wave_generator_on_raspi.info.ja.md)
