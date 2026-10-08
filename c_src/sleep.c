@@ -90,7 +90,7 @@ void print_usage_and_exit(void) {
     "                         at all; it just exits immediately with 0.\n"
     "Retuen  : Return 0 only when succeeded to sleep\n"
     "Package      : tokideli\n"
-    "Version      : 1.0.0\n"
+    "Version      : 1.1.0\n"
     "Last Updated : 2026-10-06 08:54:43 JST\n"
     "               (POSIX C language)\n"
     "\n"
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (argc>=2 && strcmp(argv[1],"--version")==0) {
-    printf("%s (tokideli) 1.0.0\n", gpszCmdname);
+    printf("%s (tokideli) 1.1.0\n", gpszCmdname);
     return 0;
   }
 

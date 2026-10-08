@@ -345,7 +345,7 @@ void print_usage_and_exit(void) {
     "          the \"-d\" option.\n"
     "\n"
     "Package      : tokideli\n"
-    "Version      : 1.0.0\n"
+    "Version      : 1.1.0\n"
     "Last Updated : 2026-10-06 08:54:43 JST\n"
     "               (POSIX C language)\n"
     "\n"
@@ -399,7 +399,7 @@ for (i=0; *(gpszCmdname+i)!='\0'; i++) {
 }
 
 if (argc>=2 && strcmp(argv[1],"--version")==0) {
-  printf("%s (tokideli) 1.0.0\n", gpszCmdname);
+  printf("%s (tokideli) 1.1.0\n", gpszCmdname);
   return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {

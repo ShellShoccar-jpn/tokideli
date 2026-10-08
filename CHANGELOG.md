@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-08
 
 ### Added
 
@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   project the command belongs to (matches the long-standing GNU-tool
   `--version` convention of naming the parent package, e.g.
   `sleep (GNU coreutils) 9.1`).
+- `manual/rec_baby_typing.info.{ja,en}.md`, a tutorial showing how to
+  record a baby's first keyboard typing (timing included) with
+  `typeliner` and `linets`, and replay it with `tscat`.
+- `manual/valve_as_wave_generator_on_raspi.info.{ja,en}.md`, a report
+  evaluating how well `yes`/`valve` can drive a Raspberry Pi GPIO pin as
+  a square-wave pulse source, compared against a dedicated function
+  generator.
+
+### Fixed
+
+- `release/bump_version.sh` previously updated only the `Version : X.Y.Z`
+  line in each command's `-h`/usage banner, but not the separate,
+  independent `X.Y.Z` literal baked into that same command's
+  `--version` output. As a result, a version bump left `--version`
+  reporting the old version. The script now updates both.
 
 ### Changed
 
@@ -23,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   line still reads `tokideli` only (not both names together), since the
   `Version` line right below it follows tokideli's own release numbering,
   which increases independently of Open usp Tukubai's.
+- In every `*.info.{ja,en}.md` document (and `linets_and_tscat.{ja,en}.md`)
+  whose language cross-link was placed after the introductory paragraph,
+  it now comes right after the title instead, so a reader who opened the
+  wrong language notices immediately rather than after reading text they
+  can't understand. `*.man.{ja,en}.md` files already placed it correctly.
 
 ## [1.0.0] - 2026-10-06
 

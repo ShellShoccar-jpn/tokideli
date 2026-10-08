@@ -86,24 +86,31 @@ esac
 printf '%s\n' "$New_version" > "$Dir_root/VERSION"
 echo "updated: VERSION"
 
-# === Update the "Version" line in every c_src/*.c file ==============
-# (the literal line is: "Version      : X.Y.Z\n" -- the padding keeps
+# === Update the "Version" line, and the "--version" output, in every
+#     c_src/*.c file ==================================================
+# (the banner line is: "Version      : X.Y.Z\n" -- the padding keeps
 #  it aligned with the "Last Updated : ..." line right below it, which
-#  this script never touches)
+#  this script never touches. The "--version" output is a separate,
+#  independent literal: printf("%s (tokideli) X.Y.Z\n", ...).)
 for f in "$Dir_root"/c_src/*.c; do
   sed -i.bak \
     -e 's/"Version      : [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\\n"/"Version      : '"$New_version"'\\n"/' \
+    -e 's/(tokideli) [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\\n"/(tokideli) '"$New_version"'\\n"/' \
     "$f"
   rm -f "$f.bak"
   echo "updated: ${f#"$Dir_root"/}"
 done
 
-# === Update the "Version" line in every cmd_scripts/*.sh file =======
-# (same padding convention, but as plain heredoc text rather than a
-#  C string literal, so no trailing "\n" token to match)
+# === Update the "Version" line, and the "--version" output, in every
+#     cmd_scripts/*.sh file ===========================================
+# (same padding convention for the banner line, but as plain heredoc
+#  text rather than a C string literal, so no trailing "\n" token to
+#  match. The "--version" output is again a separate, independent
+#  literal: printf '%s (tokideli) X.Y.Z\n' ...)
 for f in "$Dir_root"/cmd_scripts/*.sh; do
   sed -i.bak \
     -e 's/^\(	*\)Version      : [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/\1Version      : '"$New_version"'/' \
+    -e 's/(tokideli) [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\\n'"'"'/(tokideli) '"$New_version"'\\n'"'"'/' \
     "$f"
   rm -f "$f.bak"
   echo "updated: ${f#"$Dir_root"/}"
