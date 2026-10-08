@@ -190,4 +190,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[tscat(1)](tscat.man.en.md), [LINETS & TSCAT Command Tutorial](linets_and_tscat.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md)
+[tscat(1)](tscat.man.en.md), [LINETS & TSCAT Command Tutorial](linets_and_tscat.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md), [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](rec_baby_typing.info.en.md)

@@ -1,8 +1,8 @@
 # Comparing tokideli's delay Command with an Earlier delay Command (rom1v/delay)
 
-It turns out a command also named `delay`, sharing a similar concept, already existed before tokideli's: [rom1v/delay](https://github.com/rom1v/delay). Both aim to do the same thing — "delay data arriving on standard input by a fixed amount of time before sending it to standard output" — but comparing the two implementations revealed some fairly different design philosophies, which this document records.
-
 （日本語版は[こちら](delay_commands_comparision.info.ja.md)）
+
+It turns out a command also named `delay`, sharing a similar concept, already existed before tokideli's: [rom1v/delay](https://github.com/rom1v/delay). Both aim to do the same thing — "delay data arriving on standard input by a fixed amount of time before sending it to standard output" — but comparing the two implementations revealed some fairly different design philosophies, which this document records.
 
 ## About the Two Projects
 

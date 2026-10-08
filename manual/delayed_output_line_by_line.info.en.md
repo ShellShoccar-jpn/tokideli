@@ -1,8 +1,8 @@
 # How to Delay Output Line by Line
 
-The [delay(1)](delay.man.en.md) command records a timestamp for every single byte that arrives and delays its output on a per-byte basis. For text data delimited by newlines, however, there are cases where you want to delay the output "line by line" rather than byte by byte. This document explains how to achieve that, and what to watch out for along the way.
-
 （日本語版は[こちら](delayed_output_line_by_line.info.ja.md)）
+
+The [delay(1)](delay.man.en.md) command records a timestamp for every single byte that arrives and delays its output on a per-byte basis. For text data delimited by newlines, however, there are cases where you want to delay the output "line by line" rather than byte by byte. This document explains how to achieve that, and what to watch out for along the way.
 
 ## Note: strict "line-by-line" delay is not actually possible
 

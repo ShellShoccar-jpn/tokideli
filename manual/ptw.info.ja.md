@@ -1,8 +1,8 @@
 # PTWコマンドの役割について
 
-このコマンドは`stdbuf`コマンドの代替用です。なぜ、`stdbuf`があるのにわざわざ`ptw`が必要なのかについて記します。
-
 (English version is [here](ptw.info.en.md))
+
+このコマンドは`stdbuf`コマンドの代替用です。なぜ、`stdbuf`があるのにわざわざ`ptw`が必要なのかについて記します。
 
 ## `stdbuf`コマンドの制約
 

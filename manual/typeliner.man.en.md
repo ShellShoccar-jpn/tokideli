@@ -99,4 +99,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[linets(1)](linets.man.en.md), [tscat(1)](tscat.man.en.md)
+[linets(1)](linets.man.en.md), [tscat(1)](tscat.man.en.md), [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](rec_baby_typing.info.en.md)

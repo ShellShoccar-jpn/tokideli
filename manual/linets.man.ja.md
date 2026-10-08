@@ -190,4 +190,4 @@ $ cat DATA_SOURCE | ptw grep "" | linets -3e
 
 ## 関連項目
 
-[tscat(1)](tscat.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)
+[tscat(1)](tscat.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)

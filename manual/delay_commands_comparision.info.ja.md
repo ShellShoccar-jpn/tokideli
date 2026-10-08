@@ -1,8 +1,8 @@
 # tokideliのdelayコマンドと先行するdelayコマンド（rom1v/delay）の比較
 
-`delay`という名前の似たコンセプトを持つコマンドが、tokideli以前から存在していたことが分かりました（[rom1v/delay](https://github.com/rom1v/delay)）。両者とも「標準入力から到来したデータを、一定時間遅延させてから標準出力へ送る」という同じ目的を持っていますが、実装を比較すると設計思想がかなり異なることが分かったので、ここに記録します。
-
 (English version is [here](delay_commands_comparision.info.en.md))
+
+`delay`という名前の似たコンセプトを持つコマンドが、tokideli以前から存在していたことが分かりました（[rom1v/delay](https://github.com/rom1v/delay)）。両者とも「標準入力から到来したデータを、一定時間遅延させてから標準出力へ送る」という同じ目的を持っていますが、実装を比較すると設計思想がかなり異なることが分かったので、ここに記録します。
 
 ## 比較対象について
 

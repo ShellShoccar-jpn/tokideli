@@ -99,4 +99,4 @@ $ tscat -yZ mytyping.txt
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[tscat(1)](tscat.man.ja.md)
+[linets(1)](linets.man.ja.md)、[tscat(1)](tscat.man.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)

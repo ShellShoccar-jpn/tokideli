@@ -1,9 +1,8 @@
 # What Is PTW Command for?
 
-By this document, you will know what `ptw` command is for.
-
 （日本語版は[こちら](ptw.info.ja.md)）
 
+By this document, you will know what `ptw` command is for.
 
 ## Limitation of `stdbuf` Command
 

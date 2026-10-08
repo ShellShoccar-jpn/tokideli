@@ -193,4 +193,4 @@ BEGIN {
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[charts(1)](charts.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)
+[linets(1)](linets.man.ja.md)、[LINETS & TSCATチュートリアル](linets_and_tscat.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[charts(1)](charts.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)
