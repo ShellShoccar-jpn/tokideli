@@ -105,6 +105,17 @@ done
 
 ## ビルド・インストール方法
 
+### パッケージマネージャーでインストールする
+
+* **Homebrew**（macOS / Linuxbrew）:
+  ```sh
+  $ brew tap ShellShoccar-jpn/tap
+  $ brew install tokideli
+  ```
+* **AUR**（Arch Linux）: 準備中です。
+
+### ソースからビルドしてインストールする
+
 このリポジトリーを `git clone` してください。そして `INSTALLIN.sh` にインストール先ディレクトリー名を指定して実行してください。ビルドとインストールが対話形式で実行されます。
 
 手短に説明すると、下記のコマンドを実行すればインストールが完了します。（"/usr/local/tokideli"は標準的なインストール先）
