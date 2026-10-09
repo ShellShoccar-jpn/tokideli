@@ -66,7 +66,7 @@ print_usage_and_exit() {
 	            =yes ........ Line-buffered mode if possible
 	            =forcible ... Line-buffered mode or exit if impossible
 	Package      : tokideli
-	Version      : 1.1.0
+	Version      : 1.1.1
 	Last Updated : 2026-10-06 08:54:43 JST
 	               Open usp Tukubai (POSIX Bourne Shell/POSIX commands)
 	USAGE
@@ -85,7 +85,7 @@ error_exit() {
 # === Get the options and the filepath ===============================
 # --- handle "--version" before anything else -------------------------
 case "${1:-}" in
-  --version) printf '%s (tokideli) 1.1.0\n' "${0##*/}"; exit 0;;
+  --version) printf '%s (tokideli) 1.1.1\n' "${0##*/}"; exit 0;;
 esac
 # --- initialize option parameters -----------------------------------
 directmode=0

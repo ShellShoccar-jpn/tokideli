@@ -228,7 +228,7 @@ void print_usage_and_exit(void) {
     "                        but if failed, it will try the smaller numbers.\n"
 #endif
     "Package      : tokideli\n"
-    "Version      : 1.1.0\n"
+    "Version      : 1.1.1\n"
     "Last Updated : 2026-10-09 16:06:06 JST\n"
     "               (POSIX C language)\n"
     "\n"
@@ -297,7 +297,7 @@ for (i=0; *(gpszCmdname+i)!='\0'; i++) {
 }
 
 if (argc>=2 && strcmp(argv[1],"--version")==0) {
-  printf("%s (tokideli) 1.1.0\n", gpszCmdname);
+  printf("%s (tokideli) 1.1.1\n", gpszCmdname);
   return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {
