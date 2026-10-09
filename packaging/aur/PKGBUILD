@@ -32,4 +32,5 @@ package() {
   install -d "$pkgdir/usr/share/doc/$pkgname"
   install -m644 manual/*.md "$pkgdir/usr/share/doc/$pkgname/"
   rm -f "$pkgdir/usr/share/doc/$pkgname/CLAUDE.md"
+  install -m644 README.md README.ja.md README.en.md "$pkgdir/usr/share/doc/$pkgname/"
 }

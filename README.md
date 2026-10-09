@@ -103,6 +103,17 @@ To see the usages for the commands, build the command and run them with the opti
 
 ## How to Build and Install
 
+### Install via a package manager
+
+* **Homebrew** (macOS / Linuxbrew):
+  ```sh
+  $ brew tap ShellShoccar-jpn/tap
+  $ brew install tokideli
+  ```
+* **AUR** (Arch Linux): Coming soon.
+
+### Build and install from source
+
 First, `git clone` this repository. Then, run the `INSTALLIN.sh` with specifying the install directory. Building and installation progress interactively.
 
 To short, all you have to do is to type the following commands. ("/usr/local/tokideli" is a typical directory for installation)
