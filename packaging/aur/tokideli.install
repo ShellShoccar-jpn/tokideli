@@ -1,0 +1,8 @@
+post_install() {
+	echo "Note: tokideli's 'sleep' command is installed as 'tdsleep',"
+	echo "since 'sleep' itself is already owned by coreutils."
+}
+
+post_upgrade() {
+	post_install
+}

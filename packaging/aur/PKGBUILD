@@ -1,0 +1,35 @@
+# Maintainer: Shell-Shoccar Japan (@shellshoccarjpn)
+pkgname=tokideli
+pkgver=1.1.1
+pkgrel=1
+pkgdesc="A collection of lightweight POSIX-compliant commands for accurate time management (note: 'sleep' is installed as 'tdsleep' to avoid overwriting coreutils' sleep)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/ShellShoccar-jpn/tokideli"
+license=('Unlicense')
+makedepends=('gcc')
+install="$pkgname.install"
+source=("$pkgname-$pkgver.tar.gz::https://github.com/ShellShoccar-jpn/tokideli/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('9a039c3125ce73337acc1e7d8d7040d235f3fb11838e080ddfc6cc679484e630')
+
+build() {
+  cd "$pkgname-$pkgver"
+  mkdir -p "$srcdir/bin"
+  (cd c_src && sh MAKE.sh -d "$srcdir/bin")
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -d "$pkgdir/usr/bin"
+  # 'sleep' collides with the always-installed coreutils package, so it is
+  # installed as 'tdsleep' here. Every other command keeps its upstream name.
+  for f in "$srcdir"/bin/*; do
+    case "${f##*/}" in
+      sleep) install -m755 "$f" "$pkgdir/usr/bin/tdsleep" ;;
+      *)     install -m755 "$f" "$pkgdir/usr/bin/" ;;
+    esac
+  done
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -d "$pkgdir/usr/share/doc/$pkgname"
+  install -m644 manual/*.md "$pkgdir/usr/share/doc/$pkgname/"
+  rm -f "$pkgdir/usr/share/doc/$pkgname/CLAUDE.md"
+}
