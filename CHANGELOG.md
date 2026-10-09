@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-10-09
+
+### Fixed
+
+- Every command's basename-extraction loop (used to compute the `gpszCmdname`
+  shown in error messages and in `--version` output) failed to fully strip
+  the directory portion of `argv[0]` whenever it contained two or more `/`
+  characters (e.g. `/usr/bin/sleep`), leaving a partial path fragment (e.g.
+  `bin/sleep`) instead of the plain command name. The loop re-pointed
+  `gpszCmdname` mid-scan without resetting its own index, so the scan
+  position drifted out of sync with the string it was now scanning. This
+  went unnoticed because invoking a command via a single-component relative
+  path (e.g. `./sleep`, or a bare name found via `$PATH`) happened not to
+  trigger the bug; it surfaced while preparing this project's first
+  Homebrew/AUR packages, where commands are commonly invoked by their full
+  installed path. Discovered and fixed across all 18 `c_src/*.c` files.
+
 ## [1.1.0] - 2026-10-08
 
 ### Added

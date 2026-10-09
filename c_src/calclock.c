@@ -58,7 +58,7 @@
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -lm
 #
 # Designed originally by Nobuaki Tounaka
-# Ported to C by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-06
+# Ported to C by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-09
 # Also maintained, kept in sync, as part of Open usp Tukubai
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -243,7 +243,7 @@ void print_usage_and_exit(void) {
     "\n"
     "Package      : tokideli\n"
     "Version      : 1.1.0\n"
-    "Last Updated : 2026-10-06 08:54:43 JST\n"
+    "Last Updated : 2026-10-09 16:06:06 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Designed originally by Nobuaki Tounaka\n"
@@ -300,7 +300,7 @@ FILE*    fp;
 /*--- Initialize ---------------------------------------------------*/
 gpszCmdname = argv[0];
 for (i=0; *(gpszCmdname+i)!='\0'; i++) {
-  if (*(gpszCmdname+i)=='/') {gpszCmdname=gpszCmdname+i+1;}
+  if (*(gpszCmdname+i)=='/') {gpszCmdname=gpszCmdname+i+1; i=-1;}
 }
 
 if (argc>=2 && strcmp(argv[1],"--version")==0) {
