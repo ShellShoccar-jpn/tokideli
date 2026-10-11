@@ -186,4 +186,4 @@ Android（Bionic libc、Termuxで確認）では、`"C"`ロケールを要求し
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[tscat(1)](tscat.man.ja.md)
+[linets(1)](linets.man.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[tscat(1)](tscat.man.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)

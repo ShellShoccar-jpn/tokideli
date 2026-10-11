@@ -43,7 +43,7 @@ $ cat TEXTDATA_SOURCE | delay 10MiB@3s
 
 ただし、[delay(1)](delay.man.ja.md)コマンドはもともとバイト単位の遅延を想定しており、1バイトごとにタイムスタンプ記録用の領域も確保します。このタイムスタンプがナノ秒精度であるという事情から、64ビット環境の場合、1バイトを保持するために実際には16バイトのメモリが確保されます（詳細は[delay(1)コマンドのsize引数の説明](delay.man.ja.md#size)を参照してください）。そのため、大きなバッファーを確保しようとすると、その分メモリを大量に消費してしまいます。
 
-これを避けたい場合は、代わりに[surgetk(1)](surgetk.man.ja.md)・[linets(1)](linets.man.ja.md)・[tscat(1)](tscat.man.ja.md)の各コマンドと、awk(1)コマンドを組み合わせ、次のように書くとよいでしょう。
+これを避けたい場合は、代わりに[linets(1)](linets.man.ja.md)・[surgetk(1)](surgetk.man.ja.md)・[tscat(1)](tscat.man.ja.md)の各コマンドと、awk(1)コマンドを組み合わせ、次のように書くとよいでしょう。
 
 ```sh:
 $ cat TEXTDATA_SOURCE |
@@ -95,3 +95,7 @@ sb = ( r / 8 ) * dt
 ## まとめ
 
 行単位でのテキストデータの遅延出力は、各行の到来に要する時間が遅延時間より十分短いという前提のもとでなら、[delay(1)](delay.man.ja.md)コマンド単体で簡単に実現できます。大きなバッファーが必要になりメモリ消費が気になる場合は、[linets(1)](linets.man.ja.md)・[surgetk(1)](surgetk.man.ja.md)・[tscat(1)](tscat.man.ja.md)とawk(1)を組み合わせた方法で、バイト単位のタイムスタンプ記録コストを避けながら同じ効果を得られます。どちらの方法を選ぶかは、想定するデータ量とホストのメモリ事情に応じて判断してください。
+
+## 関連項目
+
+[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)

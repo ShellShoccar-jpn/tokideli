@@ -95,6 +95,14 @@ done
 
 各コマンドの使用法を見たい場合は、各コマンドをビルドした上で `--help` オプションを付けて実行してください。また、組み合わせ方の具体例や設計の背景について、より詳しく書かれた読み物も[`manual/`](manual/)ディレクトリーに揃えています（日英両言語）。
 
+* [tokideliのdelayコマンドと先行するdelayコマンド（rom1v/delay）の比較](manual/delay_commands_comparision.info.ja.md)
+* [行単位でデータを遅延出力する方法](manual/delayed_output_line_by_line.info.ja.md)
+* [PTWコマンドの役割について](manual/ptw.info.ja.md)
+* [赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](manual/rec_baby_typing.info.ja.md)
+* [動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](manual/smooth_out_data_delivery_like_live_video_streaming.info.ja.md)
+* [valveコマンドをRaspberry Pi上で方形波発生器として使う](manual/valve_as_wave_generator_on_raspi.info.ja.md)
+* [valveコマンドの転送レート精度に関するレポート](manual/valve_precision.info.ja.md)
+
 ## Highlights
 
 * **ナノ秒精度** — バイト単位・行単位の到来時刻をナノ秒精度で記録・比較できる。

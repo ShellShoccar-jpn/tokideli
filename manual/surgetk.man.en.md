@@ -206,3 +206,5 @@ The source code of this command conforms to C99 and IEEE Std 1003.1-2008 ("POSIX
 [delay(1)](delay.man.en.md)
 
 [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md) - How to delay line-oriented text data line by line, and what to watch out for.
+
+[Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md) - A practical method, illustrated with data relaying between IoT devices, for absorbing arrival-time jitter with a fixed delay.

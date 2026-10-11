@@ -93,6 +93,14 @@ Now, including these, here's the full list of the 18 commands we've prepared.
 
 To see the usages for the commands, build the command and run them with the option `--help`. For more in-depth articles on how to combine these commands and the design background, see the [`manual/`](manual/) directory (available in both English and Japanese).
 
+* [Comparing tokideli's delay Command with an Earlier delay Command (rom1v/delay)](manual/delay_commands_comparision.info.en.md)
+* [How to Delay Output Line by Line](manual/delayed_output_line_by_line.info.en.md)
+* [What Is PTW Command for?](manual/ptw.info.en.md)
+* [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](manual/rec_baby_typing.info.en.md)
+* [Smooth out data delivery by delaying it, just like live video streaming](manual/smooth_out_data_delivery_like_live_video_streaming.info.en.md)
+* [Using the valve Command as a Square-Wave Generator on a Raspberry Pi](manual/valve_as_wave_generator_on_raspi.info.en.md)
+* [Report on the Transfer-Rate Precision of the valve Command](manual/valve_precision.info.en.md)
+
 ## Highlights
 
 * **Nanosecond precision** — record and compare byte- and line-level arrival times with nanosecond precision.

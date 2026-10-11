@@ -206,3 +206,5 @@ pipe_buf             4096
 [delay(1)](delay.man.ja.md)
 
 [行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md) - テキストデータを行単位で遅延出力したい場合の方法と注意点。
+
+[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md) - IoTデバイス間のデータ中継を例に、到達時間の揺らぎを一定の遅延で吸収する実用的な方法。

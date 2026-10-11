@@ -43,7 +43,7 @@ $ cat TEXTDATA_SOURCE | delay 10MiB@3s
 
 Keep in mind, though, that [delay(1)](delay.man.en.md) is fundamentally designed around byte-level delay, and allocates room for a timestamp alongside every single byte. Because that timestamp has nanosecond precision, on a 64-bit environment holding one byte actually costs 16 bytes of real memory (see [delay(1)'s description of the *size* argument](delay.man.en.md#size) for details). So allocating a large buffer this way can consume a correspondingly large amount of memory.
 
-If you want to avoid that, you can instead combine the [surgetk(1)](surgetk.man.en.md), [linets(1)](linets.man.en.md), and [tscat(1)](tscat.man.en.md) commands with the awk(1) command, as follows.
+If you want to avoid that, you can instead combine the [linets(1)](linets.man.en.md), [surgetk(1)](surgetk.man.en.md), and [tscat(1)](tscat.man.en.md) commands with the awk(1) command, as follows.
 
 ```sh:
 $ cat TEXTDATA_SOURCE |
@@ -95,3 +95,7 @@ A couple of notes:
 ## Summary
 
 As long as each line arrives fast enough relative to the delay you want, delaying text data line by line is easy to achieve with the [delay(1)](delay.man.en.md) command alone. If you need a large buffer and are concerned about the resulting memory usage, combining [linets(1)](linets.man.en.md), [surgetk(1)](surgetk.man.en.md), and [tscat(1)](tscat.man.en.md) with awk(1) achieves the same effect while avoiding the cost of recording a timestamp for every single byte. Which approach to use depends on the data volume you expect and the memory available on your host.
+
+## See Also
+
+[Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md)
