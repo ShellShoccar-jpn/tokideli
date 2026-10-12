@@ -147,7 +147,7 @@ To decide on a reasonable buffer size (the *size* argument) for the [surgetk(1)]
 * *nl* — the number of lines arriving per second
 * *dt* — the number of seconds you want to delay by
 
-Given these, the number of bytes *sb* that must be held for the delayed output (i.e. the minimum value to give as the *size* parameter of the [delay(1)](delay.man.en.md)/[surgetk(1)](surgetk.man.en.md) commands) can be computed as:
+Given these, the number of bytes *sb* that must be held for the delayed output (i.e. the minimum value to give as the *size* parameter of the [surgetk(1)](surgetk.man.en.md)/[delay(1)](delay.man.en.md) commands) can be computed as:
 
 ```
 sb = sl * nl * dt
@@ -166,7 +166,7 @@ So, for example, if you want to delay data arriving over a 57600bps link by 5 se
 A couple of notes:
 
 * These are theoretical estimates. Real-world fluctuations in the transfer rate can push the actual requirement above them, so it's safer to allocate a somewhat larger buffer than the computed value.
-* When you give this value to the [delay(1)](delay.man.en.md) command, it internally tries to allocate roughly 16 times as much memory (on a 64-bit environment), so pay attention to how much memory the host actually has installed. (As noted above, this multiplier does not apply to the [surgetk(1)](surgetk.man.en.md) command.)
+* When you give this value to the [delay(1)](delay.man.en.md) command, it internally tries to allocate roughly 16 times as much memory (on a 64-bit environment), so pay attention to how much memory the host actually has installed. (This multiplier does not apply to the [surgetk(1)](surgetk.man.en.md) command.)
 
 ## Summary
 
