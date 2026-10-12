@@ -137,6 +137,8 @@ $ mosquitto_sub -h BROKER_ADDRESS -t TOPIC_NAME |
   * Used to exchange data with the device connected to the serial interface.
   * Assuming "Device #2" is connected to /dev/MY_USBSERIAL2, it sends data there at 57600bps.
 
+If you added the timestamp on a per-byte basis on the IoT host #1 side (using the [charts(1)](charts.man.en.md) command instead of the [linets(1)](linets.man.en.md) command), add the `-y` option to the [tscat(1)](tscat.man.en.md) command. This prevents a newline from being appended after every single byte of the original data, so that it's correctly reconstructed.
+
 ## Deciding on a buffer size
 
 To decide on a reasonable buffer size (the *size* argument) for the [surgetk(1)](surgetk.man.en.md) command (likewise for the [delay(1)](delay.man.en.md) command), define the following parameters.

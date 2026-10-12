@@ -135,6 +135,8 @@ $ mosquitto_sub -h BROKER_ADDRESS -t TOPIC_NAME |
   * シリアルインターフェースに繋がる機器とのデータ授受に使う。
   * /dev/MY_USBSERIAL2に「電子機器#2」が繋がっている想定で、そこへ57600bpsでデータを送信する。
 
+なお、IoTホスト#1側で、行単位ではなくバイト単位でタイムスタンプを付加した（[linets(1)](linets.man.ja.md)コマンドの代わりに[charts(1)](charts.man.ja.md)コマンドを使った）場合には、[tscat(1)](tscat.man.ja.md)コマンドに-yオプションを追加してください。これにより、元のデータ1バイトごとに改行が付加されなくなり、正しく復元されます。
+
 ## バッファーサイズの決め方
 
 [surgetk(1)](surgetk.man.ja.md)コマンド（[delay(1)](delay.man.ja.md)コマンドも同様）に指定するバッファーサイズ（*size*引数）の目安を決めるために、各パラメーターを次のように定義します。
