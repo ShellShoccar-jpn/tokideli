@@ -41,7 +41,7 @@ To solve the above problem, you can use `valve` command by the following.
 $ cat /PATH/TO/textdata_source | valve -l 1s
 ```
 
-Not only we can solve the problem but also we can make the shell script simpler! Here's an actual recording comparing a naive `while`/`sleep` loop against `valve -l`, side by side. The naive loop (left) drifts by about +0.27s over 10 iterations, while `valve` (right) stays within about +0.02s.
+Not only we can solve the problem but also we can make the shell script simpler! Here's an actual recording comparing a naive `while`/`sleep` loop against `valve -l`. The naive loop (top) drifts by about +0.27s over 10 iterations, while `valve` (bottom) stays within about +0.02s.
 
 <p align="center">
   <video src="https://github.com/user-attachments/assets/3d0735d8-b737-4221-8644-9af8a19b5f25" controls muted playsinline width="520">naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s</video><br>
