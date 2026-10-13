@@ -136,7 +136,7 @@ $
 Furthermore, double the number of echoes.
 
 ```sh:
-$ typeliner -t '' | (( tee /dev/stderr | delay 3 ) 2>&1 | tee /dev/stderr | delay 6) 2>&1
+$ typeliner -t '' | (( tee /dev/stderr | delay 3s ) 2>&1 | tee /dev/stderr | delay 6s) 2>&1
 yo-ho!⏎        ← Type "yo-ho!" and press [Enter] within 3 seconds.
 yo-ho!          ← 3 seconds later, "yo-ho!" is displayed again, at the same typing timing.
 yo-ho!          ← 6 seconds later, "yo-ho!" is displayed again, at the same typing timing.

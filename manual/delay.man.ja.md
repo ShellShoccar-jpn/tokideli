@@ -136,7 +136,7 @@ $
 さらに、山びこの数を倍にする。
 
 ```sh:
-$ typeliner -t '' | (( tee /dev/stderr | delay 3 ) 2>&1 | tee /dev/stderr | delay 6) 2>&1
+$ typeliner -t '' | (( tee /dev/stderr | delay 3s ) 2>&1 | tee /dev/stderr | delay 6s) 2>&1
 yo-ho!⏎        ← 3秒以内に"yo-ho!"と[Enter]キーをタイプする。
 yo-ho!          ← 3秒後に、同じタイプタイミングで"yo-ho!"が表示される。
 yo-ho!          ← 6秒後に、同じタイプタイミングで"yo-ho!"が表示される。
