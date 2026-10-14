@@ -53,7 +53,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-09
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-15
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -180,7 +180,7 @@ void print_usage_and_exit(void) {
     "Retuen  : Return 0 only when finished successfully\n"
     "Package      : tokideli\n"
     "Version      : 1.1.1\n"
-    "Last Updated : 2026-10-09 16:06:06 JST\n"
+    "Last Updated : 2026-10-15 00:22:35 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -233,7 +233,9 @@ int      iFirstline='c';  /* >0 when x-opt and no line come yet     */
 int      i;               /* all-purpose int                        */
 
 /*--- Initialize ---------------------------------------------------*/
-if (clock_gettime(CLOCK_REALTIME,&gtsZero) != 0) {
+/* gtsZero is used only by -z/-Z (elapsed-time formats), never by -c/-e/-I,
+ * so it's always safe to source it from CLOCK_MONOTONIC here.           */
+if (clock_gettime(CLOCK_MONOTONIC,&gtsZero) != 0) {
   error_exit(errno,"clock_gettime() at initialize: %s\n",strerror(errno));
 }
 gpszCmdname = argv[0];
@@ -644,7 +646,9 @@ int read_Z1st_1line(FILE *fp) {
   /*--- Reading and writing a line (1st letter of the line) --------*/
   if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
   if (iChar == EOF) {return(EOF);}
-  if (clock_gettime(CLOCK_REALTIME,&gtsZero) != 0) {
+  /* Re-anchor gtsZero to this line's arrival time, on the same
+   * CLOCK_MONOTONIC basis as the initial one in main().               */
+  if (clock_gettime(CLOCK_MONOTONIC,&gtsZero) != 0) {
     error_exit(errno,"read_Z1st_1line(): clock_gettime(): %s\n",
                      strerror(errno)                            );
   }
@@ -699,7 +703,16 @@ void print_cur_timestamp(void) {
   char        szTmz[ 7]      ; /* timestamp (timezone) */
 
   /*--- Get the current time ---------------------------------------*/
-  if (clock_gettime(CLOCK_REALTIME,&tsNow) != 0) {
+  /* 'c'/'I'/'e' show an absolute time, so they need CLOCK_REALTIME;
+   * 'z' (which 'Z' also becomes after its first line) shows elapsed
+   * time since gtsZero, so CLOCK_MONOTONIC is immune to clock jumps
+   * (NTP, "date" changes). The delta-t (-d) below just reuses this
+   * same tsNow rather than taking a second reading, so -d ends up on
+   * whichever clock the active format already uses; a second reading
+   * would double the per-line clock_gettime() cost (and be pure waste
+   * on platforms without a real CLOCK_MONOTONIC) just to protect a
+   * combination (-d with -c/-e/-I) that's far less exposed anyway.   */
+  if (clock_gettime((giFmtType=='z')?CLOCK_MONOTONIC:CLOCK_REALTIME,&tsNow) != 0) {
     error_exit(errno,"clock_gettime()#1: %s\n",strerror(errno));
   }
 

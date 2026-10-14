@@ -70,7 +70,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-09
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-15
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -131,6 +131,9 @@
 #endif
 /* Buffer size for the read_and_write_a_line() */
 #define LINE_BUF 1024
+#ifndef CLOCK_MONOTONIC
+  #define CLOCK_MONOTONIC CLOCK_REALTIME /* for HP-UX */
+#endif
 
 /*--- data type definitions ----------------------------------------*/
 typedef struct timespec tmsp;
@@ -229,7 +232,7 @@ void print_usage_and_exit(void) {
 #endif
     "Package      : tokideli\n"
     "Version      : 1.1.1\n"
-    "Last Updated : 2026-10-09 16:06:06 JST\n"
+    "Last Updated : 2026-10-15 00:40:40 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -288,7 +291,11 @@ FILE *fp;            /* file handle                                 */
 int   i;             /* all-purpose int                             */
 
 /*--- Initialize ---------------------------------------------------*/
-if (clock_gettime(CLOCK_REALTIME,&gtsZero) != 0) {
+/* gtsZero only ever ends up feeding an elapsed-time offset (-z without
+ * -Z uses it as-is; -Z modes overwrite it via get_time_data_arrived()
+ * before it's read), so it's always safe to source it from
+ * CLOCK_MONOTONIC here.                                               */
+if (clock_gettime(CLOCK_MONOTONIC,&gtsZero) != 0) {
   error_exit(errno,"clock_gettime() at initialize: %s\n",strerror(errno));
 }
 gpszCmdname = argv[0];
@@ -553,7 +560,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                             tsOffset.tv_nsec = gtsZero.tv_nsec;
                             iGotOffset=2;
                           } else if (tsTime.tv_sec < 0) {
-                            if (clock_gettime(CLOCK_REALTIME,&tsOffset) != 0) {
+                            if (clock_gettime(CLOCK_MONOTONIC,&tsOffset) != 0) {
                               error_exit(errno,"clock_gettime() at %d: %s\n",
                                          __LINE__,strerror(errno)            );
                             }
@@ -792,7 +799,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                           } else if (iGotOffset   ==2 &&
                                      iMode        ==6 &&
                                      tsTime.tv_sec< 0   ) {
-                            if (clock_gettime(CLOCK_REALTIME,&tsOffset) != 0) {
+                            if (clock_gettime(CLOCK_MONOTONIC,&tsOffset) != 0) {
                               error_exit(errno,"clock_gettime() at %d: %s\n",
                                          __LINE__,strerror(errno)            );
                             }
@@ -960,7 +967,10 @@ void get_time_data_arrived(int iFd, tmsp *ptsTime) {
   }
 
   /*--- Set the time -----------------------------------------------*/
-  if (clock_gettime(CLOCK_REALTIME,ptsTime) != 0) {
+  /* This anchors gtsZero to the 1st line's arrival moment for -Z modes,
+   * which only ever feeds an elapsed-time offset, so CLOCK_MONOTONIC
+   * (immune to clock jumps) is the right basis here.                  */
+  if (clock_gettime(CLOCK_MONOTONIC,ptsTime) != 0) {
     error_exit(errno,"clock_gettime() in get_time_data_arrived(): %s\n",
                strerror(errno));
   }
@@ -1467,8 +1477,14 @@ void spend_my_spare_time(tmsp *ptsTo, tmsp *ptsOffset) {
       tsTo.tv_sec   = ptsTo->tv_sec + ptsOffset->tv_sec;
     }
   }
-  /* tsNow = (current_time) */
-  if (clock_gettime(CLOCK_REALTIME,&tsNow) != 0) {
+  /* tsNow = (current_time)
+   * ptsOffset==NULL means ptsTo is an absolute wall-clock deadline taken
+   * straight from the file (-c/-e/-I without -Z), which must track
+   * CLOCK_REALTIME to stay meaningful if it's corrected (NTP, "date").
+   * ptsOffset!=NULL means ptsTo is really a duration anchored to a
+   * locally-observed moment (gtsZero), so CLOCK_MONOTONIC keeps that
+   * duration immune to such corrections instead.                    */
+  if (clock_gettime(ptsOffset?CLOCK_MONOTONIC:CLOCK_REALTIME,&tsNow) != 0) {
     error_exit(errno,"clock_gettime() in spend_my_spare_time(): %s\n",
                strerror(errno));
   }
