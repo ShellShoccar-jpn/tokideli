@@ -34,14 +34,18 @@ The equipment was connected as shown in the following diagram.
 The square wave sent out from the Raspberry Pi is generated with the following one-liner.
 
 ```sh:
-$ yes 0_1 | tr _ '\n' | valve -l Δt > /sys/class/gpio/gpio2/value
+# Using the classic (sysfs) way to control GPIO
+$ yes "$(printf '0\n1')" | valve -l Δt > /sys/class/gpio/gpio2/value
+
+# Using the modern (gpiod v2) way to control GPIO
+$ yes toggle | valve -l Δt | gpioset -i GPIO2=0
 ```
 
-`yes` and `tr` alternately generate lines of "0" and "1", which are then passed through the [valve(1)](valve.man.en.md) command. valve writes out "0" and "1" at a constant interval (line-output mode, selected with `-l`, with the interval given by `Δt`) into the GPIO special file, turning them into an electrical signal. Setting `Δt` to, say, 5ms produces a 100Hz square wave (a 10-millisecond period), and likewise setting it to 0.5ms produces a 1kHz square wave.
+`yes` generates alternating lines of "0" and "1", which are then passed through the [valve(1)](valve.man.en.md) command. valve writes out "0" and "1" at a constant interval (line-output mode, selected with `-l`, with the interval given by `Δt`) into the GPIO special file, turning them into an electrical signal. Setting `Δt` to, say, 5ms produces a 100Hz square wave (a 10-millisecond period), and likewise setting it to 0.5ms produces a 1kHz square wave.
 
 ## Results
 
-A photo of the measurement setup is shown below.
+A photo of the measurement setup is shown below. (At the time of this measurement, the "classic" method above was used.)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/valve_as_wave_generator_on_raspi_fig02.png" width="640" alt="The measurement setup: the Raspberry Pi, function generator, and oscilloscope connected together">

@@ -34,14 +34,18 @@ Raspberry PiとファンクションジェネレーターのGPIOの双方から�
 Raspberry Piから送出する方形波は、次のようなワンライナーで発生させます。
 
 ```sh:
-$ yes 0_1 | tr _ '\n' | valve -l Δt > /sys/class/gpio/gpio2/value
+# 古典的な方法（sysfs）でGPIOを操作する場合
+$ yes "$(printf '0\n1')" | valve -l Δt > /sys/class/gpio/gpio2/value
+
+# 新しい方法（gpiod v2系）でGPIOを操作する場合
+$ yes toggle | valve -l Δt | gpioset -i GPIO2=0
 ```
 
-`yes`と`tr`コマンドによって"0"の行と"1"の行を交互に生成し、それを[valve(1)](valve.man.ja.md)コマンドに通すことによって、"0"と"1"を一定間隔（`-l`オプションで行単位出力モードを指定し、`Δt`で間隔を指定）でGPIOスペシャルファイルに書き出し、電気信号に変えます。この`Δt`に与える数値を、例えば5msにすれば100Hz（一周期10ミリ秒）の方形波になりますし、同様にして0.5msにすれば1kHzの方形波になります。
+`yes`コマンドによって"0"の行と"1"の行を交互に生成し、それを[valve(1)](valve.man.ja.md)コマンドに通すことによって、"0"と"1"を一定間隔（`-l`オプションで行単位出力モードを指定し、`Δt`で間隔を指定）でGPIOスペシャルファイルに書き出し、電気信号に変えます。この`Δt`に与える数値を、例えば5msにすれば100Hz（一周期10ミリ秒）の方形波になりますし、同様にして0.5msにすれば1kHzの方形波になります。
 
 ## 計測結果
 
-計測の様子を写真に掲載します。
+計測の様子を写真に掲載します。（この計測当時は上記の「古典的な方法」にて実施）
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/ShellShoccar-jpn/tokideli-assets/main/valve_as_wave_generator_on_raspi_fig02.png" width="640" alt="計測風景: Raspberry Pi、ファンクションジェネレーター、オシロスコープを接続した様子">
