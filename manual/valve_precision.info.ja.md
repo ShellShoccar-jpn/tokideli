@@ -81,7 +81,7 @@ n = is_data_ready(check_read_fd, &ready_to_read, check_write_fd, &ready_to_write
 
 ```sh:
 $ seq -f '%05.0f' 1 60 | valve 48bps | linets -9 -d
-$ seq -f '%05.0f' 1 60 | pv -qL 6   | linets -9 -d
+$ seq -f '%05.0f' 1 60 | pv -qL 6    | linets -9 -d
 ```
 
 （"48bps"は1文字=8bitとして換算した6 Bytes/sec、"pv -qL 6"も同じく6 Bytes/secであり、いずれも6文字の行（例："00001\n"）を1秒に1行送出する設定である。`-q`はpvの進捗表示を抑制するオプション。）

@@ -81,7 +81,7 @@ Precision at a rate of 1 line/second was measured using the following commands (
 
 ```sh:
 $ seq -f '%05.0f' 1 60 | valve 48bps | linets -9 -d
-$ seq -f '%05.0f' 1 60 | pv -qL 6   | linets -9 -d
+$ seq -f '%05.0f' 1 60 | pv -qL 6    | linets -9 -d
 ```
 
 ("48bps" translates, at 8 bits per character, to 6 bytes/sec; "pv -qL 6" likewise specifies 6 bytes/sec. Both settings send one 6-character line (e.g. "00001\n") per second. `-q` suppresses pv's progress display.)
