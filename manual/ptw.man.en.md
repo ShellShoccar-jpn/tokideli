@@ -86,4 +86,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[What Is PTW Command for?](ptw.info.en.md)
+[What Is PTW Command for?](ptw.info.en.md), [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md)

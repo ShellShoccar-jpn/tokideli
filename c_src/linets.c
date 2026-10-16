@@ -7,7 +7,7 @@
 #          current time" means the instant when this command starts
 #          writing the line which has been read.
 #
-# USAGE   : linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1du] [file [...]]
+# USAGE   : linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1duj] [file [...]]
 # Args    : file ...... Filepath to be attached the current timestamp
 #                       ("-" means STDIN)
 # Options : -0,-3,-6,-9 Specify resolution unit of the time. For instance,
@@ -47,13 +47,17 @@
 #                       be attatched when using this option.
 #           -u ........ Set the date in UTC when -c option is set
 #                       (same as that of date command)
+#           -j ........ JSON-escape the incoming data on the way out
+#                       (so it can be safely embedded into a JSON string
+#                       value). The line-terminating LF itself is never
+#                       escaped. Combine with tscat's -j to reverse this.
 # Retuen  : Return 0 only when finished successfully
 #
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -lrt
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-15
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-16
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -117,6 +121,7 @@ int read_e1st_1line(FILE *fp);
 int read_I1st_1line(FILE *fp);
 int read_Z1st_1line(FILE *fp);
 void print_cur_timestamp(void);
+void output_1byte(int iByte);
 
 /*--- global variables ---------------------------------------------*/
 char* gpszCmdname      ; /* The name of this command                      */
@@ -127,6 +132,7 @@ int   giFmtType   = 'c'; /* 'c':calendar-time (default)
 int   giTimeResol =  0 ; /* 0:second(def) 3:millisec 6:microsec 9:nanosec */
 int   giDeltaMode =  0 ; /* attach the number of seconds since printing
                             the previous line after the timestamp when >0 */
+int   giJsonMode  =  0 ; /* JSON-escape the incoming data when >0 (-j)    */
 tmsp  gtsZero     = {0}; /* Time this command booted                      */
 tmsp  gtsPrev     = {0}; /* Time the previous line has come (-gtsZero)    */
 int   giHold      =  0 ; /* for read_1line(): 1 if next character exists  */
@@ -137,7 +143,7 @@ int   giNextchar       ; /* for read_1line(): the next character          */
 /*--- exit with usage ----------------------------------------------*/
 void print_usage_and_exit(void) {
   fprintf(stderr,
-    "USAGE   : %s [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1du] [file [...]]\n"
+    "USAGE   : %s [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1duj] [file [...]]\n"
     "Args    : file ...... Filepath to be attached the current timestamp\n"
     "                      (\"-\" means STDIN)\n"
     "Options : -0,-3,-6,-9 Specify resolution unit of the time. For instance,\n"
@@ -177,10 +183,15 @@ void print_usage_and_exit(void) {
     "                      be attatched when using this option.\n"
     "          -u ........ Set the date in UTC when -c option is set\n"
     "                      (same as that of date command)\n"
+    "          -j ........ JSON-escape the incoming data on the way out\n"
+    "                      (so it can be safely embedded into a JSON\n"
+    "                      string value). The line-terminating LF itself\n"
+    "                      is never escaped. Combine with tscat's -j to\n"
+    "                      reverse this.\n"
     "Retuen  : Return 0 only when finished successfully\n"
     "Package      : tokideli\n"
-    "Version      : 1.1.1\n"
-    "Last Updated : 2026-10-15 00:22:35 JST\n"
+    "Version      : 1.2.0\n"
+    "Last Updated : 2026-10-16 15:22:26 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -244,7 +255,7 @@ for (i=0; *(gpszCmdname+i)!='\0'; i++) {
 }
 
 if (argc>=2 && strcmp(argv[1],"--version")==0) {
-  printf("%s (tokideli) 1.1.1\n", gpszCmdname);
+  printf("%s (tokideli) 1.2.0\n", gpszCmdname);
   return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {
@@ -254,7 +265,7 @@ if (setenv("POSIXLY_CORRECT","1",1) < 0) {
 /*=== Parse arguments ==============================================*/
 
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "0369ceIzZ1duvh")) != -1) {
+while ((i=getopt(argc, argv, "0369ceIzZ1dujvh")) != -1) {
   switch (i) {
     case '0': giTimeResol =  0 ;                 break;
     case '3': giTimeResol =  3 ;                 break;
@@ -268,6 +279,7 @@ while ((i=getopt(argc, argv, "0369ceIzZ1duvh")) != -1) {
     case '1': iOpt_1      =  1 ;                 break;
     case 'd': giDeltaMode =  1 ;                 break;
     case 'u': (void)setenv("TZ", "UTC0", 1);     break;
+    case 'j': giJsonMode  =  1 ;                 break;
     case 'v': giVerbose++      ;                 break;
     case 'h': print_usage_and_exit();
     default : print_usage_and_exit();
@@ -348,6 +360,55 @@ return(iRet);}
 # Functions
 ####################################################################*/
 
+/*=== Output one byte, JSON-escaping it if -j was given ==============
+ * [in] iByte      : the byte to output (as int, same convention as
+ *                    putchar()/getc())
+ *      giJsonMode : (must be defined as a global variable)
+ * Since this function is only ever fed bytes that read_1line() and its
+ * c/e/I/Z-1st-line siblings have just read while scanning for the line
+ * terminator, a '\n' here is structurally always that terminator, never
+ * data embedded inside a line. So it is always written raw, regardless
+ * of -j, to keep that terminator intact for whatever reads this output
+ * later (e.g. tscat).                                                */
+void output_1byte(int iByte) {
+
+  /*--- Variables --------------------------------------------------*/
+  char szEsc[8];
+  int  iLen,i;
+
+  /*--- Decide what to actually write -------------------------------*/
+  iByte &= 0xff;
+  if (giJsonMode) {
+    switch (iByte) {
+      case '\n': szEsc[0]=(char)iByte;        iLen=1;                break;
+      case '"' : szEsc[0]='\\'; szEsc[1]='"' ; iLen=2;                break;
+      case '\\': szEsc[0]='\\'; szEsc[1]='\\'; iLen=2;                break;
+      case '\r': szEsc[0]='\\'; szEsc[1]='r' ; iLen=2;                break;
+      case '\t': szEsc[0]='\\'; szEsc[1]='t' ; iLen=2;                break;
+      case '\b': szEsc[0]='\\'; szEsc[1]='b' ; iLen=2;                break;
+      case '\f': szEsc[0]='\\'; szEsc[1]='f' ; iLen=2;                break;
+      default  :
+        if (iByte<0x20) {
+          snprintf(szEsc,sizeof(szEsc),"\\u%04x",iByte); iLen=6;
+        } else {
+          szEsc[0]=(char)iByte;                          iLen=1;
+        }
+        break;
+    }
+  } else {
+    szEsc[0]=(char)iByte; iLen=1;
+  }
+
+  /*--- Write it out --------------------------------------------------*/
+  for (i=0;i<iLen;i++) {
+    while (putchar((unsigned char)szEsc[i])==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1byte(): putchar(): %s\n",strerror(errno));
+    }
+  }
+  return;
+}
+
 /*=== Read and write only one line ===================================
  * [in]  giHold     : (must be defined as a global variable)
  *       giNextchar : (must be defined as a global variable)
@@ -364,10 +425,7 @@ int read_1line(FILE *fp) {
   if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
   if (iChar == EOF) {return(EOF);}
   print_cur_timestamp();
-  while (putchar(iChar)==EOF) {
-    if (errno == EINTR) {continue;}
-    error_exit(errno,"read_1line(): putchar() #1: %s\n",strerror(errno));
-  }
+  output_1byte(iChar);
   if (iChar == '\n') {
     giNextchar = getc(fp);
     if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -378,10 +436,7 @@ int read_1line(FILE *fp) {
   while (1) {
     if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
     if (iChar == EOF) {return(EOF);}
-    while (putchar(iChar)==EOF) {
-      if (errno == EINTR) {continue;}
-      error_exit(errno,"read_1line(): putchar() #2: %s\n",strerror(errno));
-    }
+    output_1byte(iChar);
     if (iChar == '\n') {
       giNextchar = getc(fp);
       if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -451,10 +506,7 @@ int read_c1st_1line(FILE *fp) {
     printf("0 ");
     gtsPrev.tv_sec=tsNow.tv_sec; gtsPrev.tv_nsec=tsNow.tv_nsec;
   }
-  while (putchar(iChar)==EOF) {
-    if (errno == EINTR) {continue;}
-    error_exit(errno,"read_c1st_1line(): putchar() #1: %s\n",strerror(errno));
-  }
+  output_1byte(iChar);
   if (iChar == '\n') {
     giNextchar = getc(fp);
     if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -465,10 +517,7 @@ int read_c1st_1line(FILE *fp) {
   while (1) {
     if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
     if (iChar == EOF) {return(EOF);}
-    while (putchar(iChar)==EOF) {
-      if (errno == EINTR) {continue;}
-      error_exit(errno,"read_c1st_1line(): putchar() #2: %s\n",strerror(errno));
-    }
+    output_1byte(iChar);
     if (iChar == '\n') {
       giNextchar = getc(fp);
       if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -518,10 +567,7 @@ int read_e1st_1line(FILE *fp) {
     printf("0 ");
     gtsPrev.tv_sec=tsNow.tv_sec; gtsPrev.tv_nsec=tsNow.tv_nsec;
   }
-  while (putchar(iChar)==EOF) {
-    if (errno == EINTR) {continue;}
-    error_exit(errno,"read_e1st_1line(): putchar() #1: %s\n",strerror(errno));
-  }
+  output_1byte(iChar);
   if (iChar == '\n') {
     giNextchar = getc(fp);
     if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -532,10 +578,7 @@ int read_e1st_1line(FILE *fp) {
   while (1) {
     if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
     if (iChar == EOF) {return(EOF);}
-    while (putchar(iChar)==EOF) {
-      if (errno == EINTR) {continue;}
-      error_exit(errno,"read_e1st_1line(): putchar() #2: %s\n",strerror(errno));
-    }
+    output_1byte(iChar);
     if (iChar == '\n') {
       giNextchar = getc(fp);
       if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -604,10 +647,7 @@ int read_I1st_1line(FILE *fp) {
     printf("0 ");
     gtsPrev.tv_sec=tsNow.tv_sec; gtsPrev.tv_nsec=tsNow.tv_nsec;
   }
-  while (putchar(iChar)==EOF) {
-    if (errno == EINTR) {continue;}
-    error_exit(errno,"read_I1st_1line(): putchar() #1: %s\n",strerror(errno));
-  }
+  output_1byte(iChar);
   if (iChar == '\n') {
     giNextchar = getc(fp);
     if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -618,10 +658,7 @@ int read_I1st_1line(FILE *fp) {
   while (1) {
     if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
     if (iChar == EOF) {return(EOF);}
-    while (putchar(iChar)==EOF) {
-      if (errno == EINTR) {continue;}
-      error_exit(errno,"read_I1st_1line(): putchar() #2: %s\n",strerror(errno));
-    }
+    output_1byte(iChar);
     if (iChar == '\n') {
       giNextchar = getc(fp);
       if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -658,10 +695,7 @@ int read_Z1st_1line(FILE *fp) {
   } else           {
     printf("0 ");
   }
-  while (putchar(iChar)==EOF) {
-    if (errno == EINTR) {continue;}
-    error_exit(errno,"read_Z1st_1line(): putchar() #1: %s\n",strerror(errno));
-  }
+  output_1byte(iChar);
   if (iChar == '\n') {
     giNextchar = getc(fp);
     if (giNextchar!=EOF) {giHold=1;return 0;}
@@ -672,10 +706,7 @@ int read_Z1st_1line(FILE *fp) {
   while (1) {
     if (giHold) {iChar=giNextchar; giHold=0;} else {iChar=getc(fp);}
     if (iChar == EOF) {return(EOF);}
-    while (putchar(iChar)==EOF) {
-      if (errno == EINTR) {continue;}
-      error_exit(errno,"read_Z1st_1line(): putchar() #2: %s\n",strerror(errno));
-    }
+    output_1byte(iChar);
     if (iChar == '\n') {
       giNextchar = getc(fp);
       if (giNextchar!=EOF) {giHold=1;return 0;}

@@ -98,6 +98,7 @@ To see the usages for the commands, build the command and run them with the opti
 * [What Is PTW Command for?](manual/ptw.info.en.md)
 * [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](manual/rec_baby_typing.info.en.md)
 * [Smooth out data delivery by delaying it, just like live video streaming](manual/smooth_out_data_delivery_like_live_video_streaming.info.en.md)
+* [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](manual/tokideli_vs_simillar_products.info.en.md)
 * [Using the valve Command as a Square-Wave Generator on a Raspberry Pi](manual/valve_as_wave_generator_on_raspi.info.en.md)
 * [Report on the Transfer-Rate Precision of the valve Command](manual/valve_precision.info.en.md)
 

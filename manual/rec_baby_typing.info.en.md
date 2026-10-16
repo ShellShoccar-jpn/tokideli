@@ -21,7 +21,7 @@ Once tokideli's commands are installed and ready to use, first test the typing-r
 Type the following one-liner, then type `hello,⏎world!⏎` on the keyboard, and finally press [Ctrl]+[D].
 
 ```
-$ typeliner -e | linets -3I > test_typing.log
+$ typeliner -e | linets -3Ij > test_typing.log
 hello,⏎
 world!⏎ ← (press [Ctrl]+[D] at the end)
 $ 
@@ -34,13 +34,14 @@ Here is what each command's options mean.
 * [linets(1)](linets.man.en.md) command
   * -3 option: sets the timestamp resolution to milliseconds
   * -I option: sets the timestamp format to extended ISO 8601
+  * -j option: JSON-escapes the typed characters (including the control sequences sent by keys such as the arrow keys) before recording them. This keeps control characters from mangling the recording when viewed in a text editor, and lets it be safely piped through text-processing commands such as `grep`.
 
 This records both what you typed and its timing, at millisecond precision. These commands can record at even higher precision, but given that home videos top out around 60fps, this should be more than enough.
 
 Now, let's play it back. Type the following one-liner.
 
 ```
-$ tscat -yIZ test_typing.log
+$ tscat -yIZj test_typing.log
 hello,  ← (what you typed,)
 world!  ← (appears with the same timing)
 $ 
@@ -52,6 +53,7 @@ Here is what the options mean.
   * -I option: accepts timestamps in extended ISO 8601 format
   * -y option: outputs each timestamped string without adding a newline (i.e., faithfully restores what was fed into [typeliner(1)](typeliner.man.en.md))
   * -Z option: uses the timestamp of the first string in the input file as the baseline, and times the output of the following strings relative to it
+  * -j option: reverses the escaping that `linets`'s -j option applied at recording time, turning the data back into its original control sequences
 
 Don't forget the -Z option — it's the most important one. Without it, `tscat` tries to output each line at its recorded timestamp's actual date and time, which is of course always in the past, so every character ends up printed instantly, all at once.
 
@@ -62,7 +64,7 @@ So, did your own "hello, world!" play back with the same timing you typed it? If
 Now for showtime. Bring your baby in front of the keyboard. Type the one-liner below, this time with the real recording's filename, and let your baby bang away on the keyboard to their heart's content. Once the baby's excitement dies down, press [Ctrl]+[D] to end the recording.
 
 ```
-$ typeliner -e | linets -3I > baby_typing.log
+$ typeliner -e | linets -3Ij > baby_typing.log
 (let the baby bang away on the keyboard, then press [Ctrl]+[D] at the end)
 $ 
 ```
@@ -70,7 +72,7 @@ $
 Now `baby_typing.log` should hold a record of your baby's energetic typing. Let's play it back!
 
 ```
-$ tscat -yIZ baby_typing.log
+$ tscat -yIZj baby_typing.log
 (your baby's typing appears here, with its original timing)
 $ 
 ```
@@ -78,7 +80,7 @@ $
 By the way, I made a recording of my own, too. I've pasted that data at the end of this document, so try playing it back with the one-liner below.
 
 ```
-$ cat /PATH/TO/TOKIDELI/manual/rec_baby_typing.info.en.md | sed -n '/BEGIN_BABY_TYPING/,/END_BABY_TYPING/{/^[0-9]/p;}' | tscat -yIZ
+$ cat /PATH/TO/TOKIDELI/manual/rec_baby_typing.info.en.md | sed -n '/BEGIN_BABY_TYPING/,/END_BABY_TYPING/{/^[0-9]/p;}' | tscat -yIZj
 ```
 
 ## Finally
@@ -89,50 +91,50 @@ Blessings to the future genius hacker!
 
 ```
 ### BEGIN_BABY_TYPING ###
-2026-10-06T10:51:14,483+09:00 [D[B
-2026-10-06T10:51:15,426+09:00 [B
-2026-10-06T10:51:15,890+09:00 [B
-2026-10-06T10:51:16,132+09:00 [A
-2026-10-06T10:51:16,641+09:00 [A
-2026-10-06T10:51:16,671+09:00 [A
-2026-10-06T10:51:16,703+09:00 [A
-2026-10-06T10:51:16,735+09:00 [A
-2026-10-06T10:51:16,766+09:00 [A
-2026-10-06T10:51:16,796+09:00 [A
-2026-10-06T10:51:16,842+09:00 [A
-2026-10-06T10:51:16,874+09:00 [A
-2026-10-06T10:51:16,905+09:00 [A
-2026-10-06T10:51:16,937+09:00 [A
-2026-10-06T10:51:16,967+09:00 [A
-2026-10-06T10:51:16,999+09:00 [A
-2026-10-06T10:51:17,029+09:00 [A
-2026-10-06T10:51:17,062+09:00 [A
-2026-10-06T10:51:17,107+09:00 [A
-2026-10-06T10:51:17,139+09:00 [A
-2026-10-06T10:51:17,170+09:00 [A
-2026-10-06T10:51:17,203+09:00 [A
-2026-10-06T10:51:17,234+09:00 [A
-2026-10-06T10:51:17,264+09:00 [A
-2026-10-06T10:51:17,295+09:00 [A
-2026-10-06T10:51:17,325+09:00 [A
-2026-10-06T10:51:17,372+09:00 [A
-2026-10-06T10:51:17,402+09:00 [A
-2026-10-06T10:51:17,435+09:00 [A
-2026-10-06T10:51:17,465+09:00 [A
-2026-10-06T10:51:17,496+09:00 [A
-2026-10-06T10:51:17,526+09:00 [A
-2026-10-06T10:51:17,558+09:00 [A
-2026-10-06T10:51:17,590+09:00 [A
-2026-10-06T10:51:17,620+09:00 [A
-2026-10-06T10:51:17,666+09:00 [A
-2026-10-06T10:51:17,699+09:00 [A
-2026-10-06T10:51:17,729+09:00 [A
-2026-10-06T10:51:23,941+09:00 m
-2026-10-06T10:51:23,941+09:00 ,
-2026-10-06T10:51:25,814+09:00 m,
-2026-10-06T10:51:26,631+09:00 m,.
-2026-10-06T10:51:26,739+09:00 .
-2026-10-06T10:51:26,947+09:00 .
+2026-10-06T10:51:14,483+09:00 \u001b[D\u001b[B
+2026-10-06T10:51:15,426+09:00 \u001b[B
+2026-10-06T10:51:15,890+09:00 \u001b[B
+2026-10-06T10:51:16,132+09:00 \u001b[A
+2026-10-06T10:51:16,641+09:00 \u001b[A
+2026-10-06T10:51:16,671+09:00 \u001b[A
+2026-10-06T10:51:16,703+09:00 \u001b[A
+2026-10-06T10:51:16,735+09:00 \u001b[A
+2026-10-06T10:51:16,766+09:00 \u001b[A
+2026-10-06T10:51:16,796+09:00 \u001b[A
+2026-10-06T10:51:16,842+09:00 \u001b[A
+2026-10-06T10:51:16,874+09:00 \u001b[A
+2026-10-06T10:51:16,905+09:00 \u001b[A
+2026-10-06T10:51:16,937+09:00 \u001b[A
+2026-10-06T10:51:16,967+09:00 \u001b[A
+2026-10-06T10:51:16,999+09:00 \u001b[A
+2026-10-06T10:51:17,029+09:00 \u001b[A
+2026-10-06T10:51:17,062+09:00 \u001b[A
+2026-10-06T10:51:17,107+09:00 \u001b[A
+2026-10-06T10:51:17,139+09:00 \u001b[A
+2026-10-06T10:51:17,170+09:00 \u001b[A
+2026-10-06T10:51:17,203+09:00 \u001b[A
+2026-10-06T10:51:17,234+09:00 \u001b[A
+2026-10-06T10:51:17,264+09:00 \u001b[A
+2026-10-06T10:51:17,295+09:00 \u001b[A
+2026-10-06T10:51:17,325+09:00 \u001b[A
+2026-10-06T10:51:17,372+09:00 \u001b[A
+2026-10-06T10:51:17,402+09:00 \u001b[A
+2026-10-06T10:51:17,435+09:00 \u001b[A
+2026-10-06T10:51:17,465+09:00 \u001b[A
+2026-10-06T10:51:17,496+09:00 \u001b[A
+2026-10-06T10:51:17,526+09:00 \u001b[A
+2026-10-06T10:51:17,558+09:00 \u001b[A
+2026-10-06T10:51:17,590+09:00 \u001b[A
+2026-10-06T10:51:17,620+09:00 \u001b[A
+2026-10-06T10:51:17,666+09:00 \u001b[A
+2026-10-06T10:51:17,699+09:00 \u001b[A
+2026-10-06T10:51:17,729+09:00 \u001b[A
+2026-10-06T10:51:23,941+09:00 \u001bm
+2026-10-06T10:51:23,941+09:00 \u001b,
+2026-10-06T10:51:25,814+09:00 \u001bm\u001b,
+2026-10-06T10:51:26,631+09:00 \u001bm\u001b,\u001b.
+2026-10-06T10:51:26,739+09:00 \u001b.
+2026-10-06T10:51:26,947+09:00 \u001b.
 2026-10-06T10:51:33,854+09:00 ：＠＠ｐ－オｌ０８
 2026-10-06T10:51:34,356+09:00 7
 2026-10-06T10:51:34,387+09:00 u
@@ -168,13 +170,15 @@ Blessings to the future genius hacker!
 2026-10-06T10:51:37,274+09:00 u
 2026-10-06T10:51:37,305+09:00 u
 2026-10-06T10:51:37,336+09:00 u
-2026-10-06T10:51:37,603+09:00 [15~
-2026-10-06T10:51:38,100+09:00 	
+2026-10-06T10:51:37,603+09:00 \u001b[15~
+2026-10-06T10:51:38,100+09:00 \t
 2026-10-06T10:51:40,117+09:00 １ｑ１
-2026-10-06T10:51:41,123+09:00 [20~
-2026-10-06T10:51:41,571+09:00 [17~
-2026-10-06T10:51:41,684+09:00 [17~
-2026-10-06T10:51:41,812+09:00 [18~
-2026-10-06T10:51:42,500+09:00 [17~
+2026-10-06T10:51:41,123+09:00 \u001b[20~
+2026-10-06T10:51:41,571+09:00 \u001b[17~
+2026-10-06T10:51:41,684+09:00 \u001b[17~
+2026-10-06T10:51:41,812+09:00 \u001b[18~
+2026-10-06T10:51:42,500+09:00 \u001b[17~
 ### END_BABY_TYPING ###
 ```
+
+This data was escaped by `linets`'s -j option at recording time (control sequences such as the arrow keys are recorded in the form `\u001b[A`). As in the playback one-liner above, play it back with the -j option also given to `tscat`.

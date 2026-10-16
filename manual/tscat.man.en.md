@@ -9,7 +9,7 @@ tscat - timestamp-aware version of the "cat" command
 ## Synopsis
 
 ```sh:
-tscat [-c|-e|-I|-z] [-Z] [-1kuy] [-p n] [file [...]]
+tscat [-c|-e|-I|-z] [-Z] [-1kuyj] [-p n] [file [...]]
 ```
 
 ## Description
@@ -130,6 +130,10 @@ $ tscat -ey -Z recorded.txt
 (your typing from a moment ago is replayed on the screen)
 ```
 
+### -j
+
+Reverses the JSON-escaping applied by [linets(1)](linets.man.en.md)'s and [charts(1)](charts.man.en.md)'s `-j` option. Any `\"`, `\\`, `\n`, `\r`, `\t`, `\b`, `\f`, or `\u00XX`-style escape found in the data (the part of the line after the timestamp field) is turned back into its original byte before being written out. The line's own terminating newline is never an escape target, so it is always passed through as-is regardless of this option.
+
 ### -p *n*
 
 (Only on OSes supporting _POSIX_PRIORITY_SCHEDULING) Process priority setting. To improve the accuracy of the nanosleep() function used to adjust the data transfer rate, setting *n* to 2 or 3 raises the process priority. *n* ranges over four levels from 0 to 3, and the default is 1.
@@ -194,4 +198,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[linets(1)](linets.man.en.md), [typeliner(1)](typeliner.man.en.md), [charts(1)](charts.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md), [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](rec_baby_typing.info.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md)
+[linets(1)](linets.man.en.md), [typeliner(1)](typeliner.man.en.md), [charts(1)](charts.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md), [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](rec_baby_typing.info.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md), [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md)

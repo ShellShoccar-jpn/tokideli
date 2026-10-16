@@ -10,7 +10,7 @@
 #          instant when this command starts writing the character which
 #          has been read.
 #
-# USAGE   : charts [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1bdu] [file [...]]
+# USAGE   : charts [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1bduj] [file [...]]
 # Args    : file ...... Filepath to be attached the current timestamp
 #                       ("-" means STDIN)
 # Options : -0,-3,-6,-9 Specify resolution unit of the time. For instance,
@@ -55,13 +55,23 @@
 #                       will be attatched when using this option.
 #           -u ........ Set the date in UTC when -c option is set
 #                       (same as that of date command)
+#           -j ........ JSON-escape the incoming data on the way out
+#                       (so it can be safely embedded into a JSON string
+#                       value). When combined with -b, bytes 0x80 or
+#                       above are also \u00XX-escaped; without -b they
+#                       are passed through raw (valid UTF-8 doesn't need
+#                       escaping in a JSON string). The newline that
+#                       terminates each output record is never escaped
+#                       (and is always appended, even when the character
+#                       itself is a newline). Combine with tscat's -j to
+#                       reverse this.
 # Retuen  : Return 0 only when finished successfully
 #
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -lrt
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-15
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-16
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -132,6 +142,7 @@ int  read_e1st_1unit(FILE *fp);
 int  read_I1st_1unit(FILE *fp);
 int  read_Z1st_1unit(FILE *fp);
 void print_cur_timestamp(void);
+void output_1byte(int iByte);
 
 /*--- global variables ---------------------------------------------*/
 char*     gpszCmdname      ; /* The name of this command                      */
@@ -144,6 +155,7 @@ int       giDeltaMode =  0 ; /* attach the number of seconds since printing
                                  the previous character after the timestamp
                                  when >0                                      */
 int       giByteMode  =  0 ; /* 1 if -b (force byte mode) is given            */
+int       giJsonMode  =  0 ; /* JSON-escape the incoming data when >0 (-j)    */
 tmsp      gtsZero     = {0}; /* Time this command booted                      */
 tmsp      gtsPrev     = {0}; /* Time the previous character has come         */
 int       giHold      =  0 ; /* for read_1char_unit(): 1 if the next
@@ -160,7 +172,7 @@ int       giPushbacklen= 0 ; /* number of bytes currently pushed back        */
 /*--- exit with usage ----------------------------------------------*/
 void print_usage_and_exit(void) {
   fprintf(stderr,
-    "USAGE   : %s [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1bdu] [file [...]]\n"
+    "USAGE   : %s [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1bduj] [file [...]]\n"
     "Args    : file ...... Filepath to be attached the current timestamp\n"
     "                      (\"-\" means STDIN)\n"
     "Options : -0,-3,-6,-9 Specify resolution unit of the time. For instance,\n"
@@ -205,10 +217,21 @@ void print_usage_and_exit(void) {
     "                      fields will be attatched when using this option.\n"
     "          -u ........ Set the date in UTC when -c option is set\n"
     "                      (same as that of date command)\n"
+    "          -j ........ JSON-escape the incoming data on the way out\n"
+    "                      (so it can be safely embedded into a JSON\n"
+    "                      string value). When combined with -b, bytes\n"
+    "                      0x80 or above are also \\u00XX-escaped;\n"
+    "                      without -b they are passed through raw (valid\n"
+    "                      UTF-8 doesn't need escaping in a JSON string).\n"
+    "                      The newline that terminates each output\n"
+    "                      record is never escaped (and is always\n"
+    "                      appended, even when the character itself is a\n"
+    "                      newline). Combine with tscat's -j to reverse\n"
+    "                      this.\n"
     "Retuen  : Return 0 only when finished successfully\n"
     "Package      : tokideli\n"
-    "Version      : 1.1.1\n"
-    "Last Updated : 2026-10-15 00:23:37 JST\n"
+    "Version      : 1.2.0\n"
+    "Last Updated : 2026-10-16 15:22:26 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -272,7 +295,7 @@ for (i=0; *(gpszCmdname+i)!='\0'; i++) {
 }
 
 if (argc>=2 && strcmp(argv[1],"--version")==0) {
-  printf("%s (tokideli) 1.1.1\n", gpszCmdname);
+  printf("%s (tokideli) 1.2.0\n", gpszCmdname);
   return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {
@@ -282,7 +305,7 @@ if (setenv("POSIXLY_CORRECT","1",1) < 0) {
 /*=== Parse arguments ==============================================*/
 
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "0369ceIzZ1bduvh")) != -1) {
+while ((i=getopt(argc, argv, "0369ceIzZ1bdujvh")) != -1) {
   switch (i) {
     case '0': giTimeResol =  0 ;                 break;
     case '3': giTimeResol =  3 ;                 break;
@@ -297,6 +320,7 @@ while ((i=getopt(argc, argv, "0369ceIzZ1bduvh")) != -1) {
     case 'b': giByteMode  =  1 ;                 break;
     case 'd': giDeltaMode =  1 ;                 break;
     case 'u': (void)setenv("TZ", "UTC0", 1);     break;
+    case 'j': giJsonMode  =  1 ;                 break;
     case 'v': giVerbose++      ;                 break;
     case 'h': print_usage_and_exit();
     default : print_usage_and_exit();
@@ -483,25 +507,74 @@ int fetch_1char(FILE *fp, char *pszUnit, int *piLen) {
 }
 
 
+/*=== Output one byte, JSON-escaping it if -j was given ==============
+ * [in] iByte      : the byte to output (as int, same convention as
+ *                    putchar()/getc())
+ *      giJsonMode : (must be defined as a global variable)
+ *      giByteMode : (must be defined as a global variable)
+ * Unlike linets.c, a '\n' byte here may genuinely be character DATA
+ * (not necessarily a record terminator), so it's escaped like any
+ * other control character in -j mode; write_1char() is responsible
+ * for always appending its own real terminator newline separately
+ * once it's in -j mode (see below).                                 */
+void output_1byte(int iByte) {
+
+  /*--- Variables --------------------------------------------------*/
+  char szEsc[8];
+  int  iLen,i;
+
+  /*--- Decide what to actually write -------------------------------*/
+  iByte &= 0xff;
+  if (giJsonMode) {
+    switch (iByte) {
+      case '"' : szEsc[0]='\\'; szEsc[1]='"' ; iLen=2;                break;
+      case '\\': szEsc[0]='\\'; szEsc[1]='\\'; iLen=2;                break;
+      case '\n': szEsc[0]='\\'; szEsc[1]='n' ; iLen=2;                break;
+      case '\r': szEsc[0]='\\'; szEsc[1]='r' ; iLen=2;                break;
+      case '\t': szEsc[0]='\\'; szEsc[1]='t' ; iLen=2;                break;
+      case '\b': szEsc[0]='\\'; szEsc[1]='b' ; iLen=2;                break;
+      case '\f': szEsc[0]='\\'; szEsc[1]='f' ; iLen=2;                break;
+      default  :
+        if (iByte<0x20 || (giByteMode && iByte>=0x80)) {
+          snprintf(szEsc,sizeof(szEsc),"\\u%04x",iByte); iLen=6;
+        } else {
+          szEsc[0]=(char)iByte;                          iLen=1;
+        }
+        break;
+    }
+  } else {
+    szEsc[0]=(char)iByte; iLen=1;
+  }
+
+  /*--- Write it out --------------------------------------------------*/
+  for (i=0;i<iLen;i++) {
+    while (putchar((unsigned char)szEsc[i])==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1byte(): putchar(): %s\n",strerror(errno));
+    }
+  }
+  return;
+}
+
 /*=== Write the raw bytes of one character, then a trailing newline ==
  * The trailing newline is omitted when the character itself already
  * is a single '\n' byte, since that byte already terminates the
- * record by itself.                                                 */
+ * record by itself. In -j mode this omission never applies: the
+ * character's escaped representation is never a literal '\n' byte
+ * (even when the original character was one), so the real terminator
+ * must always be appended there.                                    */
 void write_1char(const char *pszUnit, int iLen) {
 
   /*--- Variables --------------------------------------------------*/
   int i;
 
-  /*--- Write the character's raw bytes -----------------------------*/
+  /*--- Write the character's raw bytes (escaping it if -j) --------*/
   for (i=0; i<iLen; i++) {
-    while (putchar((unsigned char)pszUnit[i])==EOF) {
-      if (errno == EINTR) {continue;}
-      error_exit(errno,"write_1char(): putchar() #1: %s\n",strerror(errno));
-    }
+    output_1byte((unsigned char)pszUnit[i]);
   }
 
   /*--- Write the forced trailing newline, unless already present --*/
-  if (! (iLen==1 && pszUnit[0]=='\n')) {
+  if (giJsonMode || ! (iLen==1 && pszUnit[0]=='\n')) {
     while (putchar('\n')==EOF) {
       if (errno == EINTR) {continue;}
       error_exit(errno,"write_1char(): putchar() #2: %s\n",strerror(errno));

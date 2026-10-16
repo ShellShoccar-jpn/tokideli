@@ -9,7 +9,7 @@ linets - 行頭に各行の読み込みを挿入して出力
 ## 書式
 
 ```sh:
-linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1du] [file [...]]
+linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1duj] [file [...]]
 ```
 
 ## 説明
@@ -114,6 +114,14 @@ TIMESTAMP n.ddddddddd foo bar 123
 
 タイムゾーンをUTCに設定します。これは環境変数TZに`UTC0`を設定する場合と同じです。このオプションは、-c、-Iオプション指定時の表示内容に影響します。
 
+### -j
+
+到来したデータをJSON文字列の値として安全に埋め込めるよう、エスケープしてから出力します。具体的には`"`（ダブルクォート）と`\`（バックスラッシュ）、タブ・改行（CR含む）・バックスペース・改頁は`\"`や`\t`、`\n`のような短縮形で、それ以外の制御文字（0x00-0x1F）は`\u00XX`形式でエスケープします。0x20-0x7Eの印字可能ASCII文字、および0x80以上のバイトはそのまま出力します（JSON文字列は生のUTF-8バイト列を直接含められるため）。
+
+なお、行末の改行文字そのものは、データの一部ではなく行の区切りであるため、このオプションを指定していても常にエスケープせず、そのまま出力します。
+
+このオプションで生成したデータを元のバイト列に戻すには、[tscat(1)](tscat.man.ja.md)コマンドの同名オプション`-j`を使用してください。
+
 ## 戻り値
 
 指定されたすべてのファイルを正常に処理できた場合にのみ0を戻し、引数・オプションが不正であった場合や一つでもファイル処理に失敗した場合には0以外を戻します。
@@ -190,4 +198,4 @@ $ cat DATA_SOURCE | ptw grep "" | linets -3e
 
 ## 関連項目
 
-[tscat(1)](tscat.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)
+[tscat(1)](tscat.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)、[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md)

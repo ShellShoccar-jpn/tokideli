@@ -177,3 +177,5 @@ $ echo '500ms' > ctrl    ⏎  ← 遅延時間だけを500ミリ秒に変更（�
 [先行するdelayコマンド（rom1v/delay）との比較](delay_commands_comparision.info.ja.md) - バッファサイズの意味の違いなど、設計思想の違いについてのレポート。
 
 [行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md) - テキストデータを行単位で遅延出力したい場合の方法と注意点。
+
+[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md) - rom1v/delayを含む、類似コマンドとの比較レポート。

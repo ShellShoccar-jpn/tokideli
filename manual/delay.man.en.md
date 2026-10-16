@@ -177,3 +177,5 @@ The source code of this command conforms to C99 and IEEE Std 1003.1-2008 ("POSIX
 [Comparison with an earlier delay command (rom1v/delay)](delay_commands_comparision.info.en.md) - A report on design differences, including how "buffer size" is defined differently between the two.
 
 [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md) - How to delay line-oriented text data line by line, and what to watch out for.
+
+[Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md) - A comparison report that includes rom1v/delay among other similar commands.

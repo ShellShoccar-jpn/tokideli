@@ -9,7 +9,7 @@ linets - prepend a timestamp to each line read, then output it
 ## Synopsis
 
 ```sh:
-linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1du] [file [...]]
+linets [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1duj] [file [...]]
 ```
 
 ## Description
@@ -114,6 +114,14 @@ Note that, since there is no preceding line for the first line, the second colum
 
 Sets the timezone to UTC. This is the same as setting the environment variable TZ to `UTC0`. This option affects the displayed values when the -c or -I option is given.
 
+### -j
+
+Escapes the incoming data before writing it out, so it can be safely embedded as a JSON string value. Specifically, `"` (double quote) and `\` (backslash), tab, newline (and CR), backspace and form feed are escaped using the short forms `\"`, `\t`, `\n`, etc., while any other control character (0x00-0x1F) is escaped as `\u00XX`. Printable ASCII (0x20-0x7E) and bytes 0x80 or above are passed through as-is (a JSON string value may directly contain raw UTF-8 bytes).
+
+Note that the line-terminating newline itself is never escaped regardless of this option, since it's the line delimiter rather than part of the data.
+
+To turn data generated with this option back into its original bytes, use the identically-named `-j` option of [tscat(1)](tscat.man.en.md).
+
 ## Return Value
 
 Returns 0 only when all the specified files were processed successfully. Returns non-zero if an argument or option was invalid, or if processing of one or more files failed.
@@ -190,4 +198,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[tscat(1)](tscat.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md), [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](rec_baby_typing.info.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md)
+[tscat(1)](tscat.man.en.md), [How to Delay Output Line by Line](delayed_output_line_by_line.info.en.md), [How to Record and Replay Your Baby's First Typing (A typeliner & linets & tscat Tutorial)](rec_baby_typing.info.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md), [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md)

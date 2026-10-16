@@ -86,4 +86,4 @@ $ ptw ls -1 | cat
 
 ## 関連項目
 
-[PTWコマンドの役割について](ptw.info.ja.md)
+[PTWコマンドの役割について](ptw.info.ja.md)、[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md)

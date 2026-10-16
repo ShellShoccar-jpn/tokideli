@@ -9,7 +9,7 @@ charts - prepend a timestamp to each locale-aware character read, then output it
 ## Synopsis
 
 ```sh:
-charts [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1bdu] [file [...]]
+charts [-0|-3|-6|-9] [-c|-e|-I|-z|-Z] [-1bduj] [file [...]]
 ```
 
 ## Description
@@ -60,6 +60,15 @@ Inserts, as a second column right after the column-1 timestamp, the number of se
 ### -u
 
 Sets the timezone to UTC. Same as [linets(1)](linets.man.en.md)'s -u option.
+
+### -j
+
+Escapes the incoming data before writing it out, so it can be safely embedded as a JSON string value. The basic behavior is the same as [linets(1)](linets.man.en.md)'s -j option, except for the following two points:
+
+* Only when combined with `-b`, bytes 0x80 or above are also escaped as `\u00XX` (treating the raw byte value itself as the code point). Without `-b`, bytes 0x80 or above are always passed through as-is (a JSON string value may directly contain raw UTF-8 bytes).
+* When the character (record) itself is a `\n`, it is now escaped like any other control character, into the 2-byte sequence `\n`, just like the others. Because of this, the omission rule described above — "no extra newline is appended when the character itself already is a single `\n` byte" — no longer applies while `-j` is in effect: since the escaped representation is no longer a literal newline byte, this option always appends a separate, literal record-terminating newline instead.
+
+Because of this second point, the lossless-reversibility explanation given in [Record Format and the Trailing Newline Rule](#record-format-and-the-trailing-newline-rule) below — that simply concatenating every record's payload reproduces the original byte stream — no longer holds as-is while `-j` is in effect (the payload must first be un-escaped back out of its JSON form). Instead, un-escaping each payload with the identically-named `-j` option of [tscat(1)](tscat.man.en.md) correctly recovers the original character each record represents.
 
 ## Record Format and the Trailing Newline Rule
 
@@ -186,4 +195,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[linets(1)](linets.man.en.md), [typeliner(1)](typeliner.man.en.md), [tscat(1)](tscat.man.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md)
+[linets(1)](linets.man.en.md), [typeliner(1)](typeliner.man.en.md), [tscat(1)](tscat.man.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md), [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md)

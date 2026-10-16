@@ -172,4 +172,4 @@ $ yes | valve -l 3s | while read dummy; do
 
 ## 関連項目
 
-[herewego(1)](herewego.man.ja.md)、[valveコマンドの転送レート精度に関するレポート](valve_precision.info.ja.md)、[valveコマンドをRaspberry Pi上で方形波発生器として使う](valve_as_wave_generator_on_raspi.info.ja.md)
+[herewego(1)](herewego.man.ja.md)、[valveコマンドの転送レート精度に関するレポート](valve_precision.info.ja.md)、[valveコマンドをRaspberry Pi上で方形波発生器として使う](valve_as_wave_generator_on_raspi.info.ja.md)、[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md)

@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-10-16
+
+### Added
+
+- `linets`/`charts`: a new `-j` option that JSON-escapes the data as it is
+  read in (`"`, `\`, and control characters via the standard short escapes
+  such as `\t`/`\n`, or `\u00XX` for anything else below 0x20; with
+  `charts`'s `-b`, bytes 0x80 and above are also escaped as `\u00XX`).
+  This makes it straightforward to turn recorded output into valid JSON
+  string content, or feed it safely through JSON-aware tooling, without
+  having to worry about embedded quotes, backslashes, or control bytes
+  (such as the escape sequences sent by arrow keys) breaking anything
+  downstream.
+- `tscat`: a matching `-j` option that reverses the escaping applied by
+  `linets`/`charts`'s own `-j`, turning the data back into its original
+  bytes.
+- `manual/tokideli_vs_simillar_products.info.{ja,en}.md`, a report
+  comparing `valve`, `delay`, `linets`/`charts`, and `ptw` against
+  similar existing commands (`pv -L`, rom1v/delay, moreutils' `ts`,
+  asciinema, and expect's `unbuffer`), explaining why each was
+  implemented anew rather than relying on the existing alternative.
+
+### Fixed
+
+- `linets`/`charts`/`tscat`: elapsed-time measurements (the `-z`/`-Z`/`-d`
+  options and related calculations) were computed from `CLOCK_REALTIME`,
+  so a wall-clock adjustment (e.g. an NTP correction, a manual date
+  change) occurring mid-measurement could corrupt the reported interval.
+  They now use `CLOCK_MONOTONIC`, which is immune to such adjustments.
+
+### Changed
+
+- `manual/{linets,charts,tscat}.man.{ja,en}.md`: document the new `-j`
+  option.
+- `manual/rec_baby_typing.info.{ja,en}.md`: the tutorial's one-liners now
+  use `-j`, and the appendix's sample typing data is shown already
+  JSON-escaped, matching what `-j` would actually produce when recording.
+
 ## [1.1.1] - 2026-10-09
 
 ### Fixed

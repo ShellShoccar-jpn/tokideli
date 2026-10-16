@@ -9,7 +9,7 @@ tscat - タイムスタンプ対応版"cat"コマンド
 ## 書式
 
 ```sh:
-tscat [-c|-e|-I|-z] [-Z] [-1kuy] [-p n] [file [...]]
+tscat [-c|-e|-I|-z] [-Z] [-1kuyj] [-p n] [file [...]]
 ```
 
 ## 説明
@@ -130,6 +130,10 @@ $ tscat -ey -Z recorded.txt
 （先程のタイピングの様子が画面に再現される）
 ```
 
+### -j
+
+[linets(1)](linets.man.ja.md)・[charts(1)](charts.man.ja.md)の`-j`オプションが行うJSONエスケープの逆変換を行います。タイムスタンプ列を除いたデータ部分（ペイロード）に含まれる`\"`、`\\`、`\n`、`\r`、`\t`、`\b`、`\f`や`\u00XX`形式のエスケープ表現を、元のバイト列に戻してから出力します。行末の改行文字そのものは、エスケープ対象ではないため、このオプションを指定していても常にそのまま出力されます。
+
 ### -p *n*
 
 （_POSIX_PRIORITY_SCHEDULINGをサポートしているOS限定）プロセス優先度設定。データ転送レート調整に用いるnanosleep()関数の動作精度を上げるため、このオプションの*n*値を2または3にすれば、プロセス優先度が上がります。*n*の範囲は0から3の4段階で、1がデフォルトです。
@@ -193,4 +197,4 @@ BEGIN {
 
 ## 関連項目
 
-[linets(1)](linets.man.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[charts(1)](charts.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)
+[linets(1)](linets.man.ja.md)、[typeliner(1)](typeliner.man.ja.md)、[charts(1)](charts.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)、[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md)

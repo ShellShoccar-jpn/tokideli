@@ -100,6 +100,7 @@ done
 * [PTWコマンドの役割について](manual/ptw.info.ja.md)
 * [赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](manual/rec_baby_typing.info.ja.md)
 * [動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](manual/smooth_out_data_delivery_like_live_video_streaming.info.ja.md)
+* [tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](manual/tokideli_vs_simillar_products.info.ja.md)
 * [valveコマンドをRaspberry Pi上で方形波発生器として使う](manual/valve_as_wave_generator_on_raspi.info.ja.md)
 * [valveコマンドの転送レート精度に関するレポート](manual/valve_precision.info.ja.md)
 

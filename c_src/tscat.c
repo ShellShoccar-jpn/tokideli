@@ -2,7 +2,7 @@
 #
 # TSCAT - A "cat" Command Which Can Reprodude the Timing of Flow
 #
-# USAGE   : tscat [-c|-e|-I|-z] [-Z] [-1kuy] [-p n] [file [...]]
+# USAGE   : tscat [-c|-e|-I|-z] [-Z] [-1kuyj] [-p n] [file [...]]
 # Args    : file ........ Filepath to be send ("-" means STDIN)
 #                         The file MUST be a textfile and MUST have
 #                         a timestamp at the first field to make the
@@ -55,6 +55,13 @@
 #                         recorded by as in the following.
 #                           $ typeliner -e | linets -c3 > mytyping.txt
 #                           $ tscat -ycZ mytyping.txt
+#           -j .......... Reverse the JSON-escaping that linets/charts'
+#                         own -j option applies to the data payload
+#                         (the part of the line after the timestamp
+#                         field), turning "\"", "\\", "\n", "\r", "\t",
+#                         "\b", "\f" and "\u00XX"-style escapes back
+#                         into their original bytes. The line's own
+#                         terminating LF is left untouched either way.
 #           [The following option is for professional]
 #           -p n ........ Process priority setting [0-3] (if possible)
 #                          0: Normal process
@@ -70,7 +77,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-15
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-16
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -148,11 +155,15 @@ int  parse_unixtime(char* pszTime, tmsp *ptsTime);
 int  parse_iso8601time(char* pszTime, tmsp *ptsTime);
 void spend_my_spare_time(tmsp *ptsTo, tmsp *ptsOffset);
 int  change_to_rtprocess(int iPrio);
+void output_1payloadbyte(int iByte, int *piJState, int *piJHexval,
+                          int *piJHexleft);
+void flush_1payload_state(int *piJState, int *piJHexval, int *piJHexleft);
 
 /*--- global variables ---------------------------------------------*/
 char* gpszCmdname;  /* The name of this command                    */
 int   giTypingmode; /* Typing mode by option -y is on if >0        */
 int   giVerbose;    /* speaks more verbosely by the greater number */
+int   giJsonMode;   /* Un-escape the payload by option -j if >0    */
 int   giTZoffs;     /* Offset in second in the local timezone      */
 tmsp  gtsZero;      /* The zero-point time                         */
 
@@ -162,9 +173,9 @@ tmsp  gtsZero;      /* The zero-point time                         */
 void print_usage_and_exit(void) {
   fprintf(stderr,
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
-    "USAGE   : %s [-c|-e|-I|-z] [-Z] [-1kuy] [-p n] [file [...]]\n"
+    "USAGE   : %s [-c|-e|-I|-z] [-Z] [-1kuyj] [-p n] [file [...]]\n"
 #else
-    "USAGE   : %s [-c|-e|-I|-z] [-Z] [-1kuy] [file [...]]\n"
+    "USAGE   : %s [-c|-e|-I|-z] [-Z] [-1kuyj] [file [...]]\n"
 #endif
     "Args    : file ........ Filepath to be send (\"-\" means STDIN)\n"
     "                        The file MUST be a textfile and MUST have\n"
@@ -219,6 +230,14 @@ void print_usage_and_exit(void) {
     "                        recorded by as in the following.\n"
     "                          $ typeliner -e | linets -c3 > mytyping.txt\n"
     "                          $ tscat -ycZ mytyping.txt\n"
+    "          -j .......... Reverse the JSON-escaping that linets/charts'\n"
+    "                        own -j option applies to the data payload\n"
+    "                        (the part of the line after the timestamp\n"
+    "                        field), turning \"\\\"\", \"\\\\\", \"\\n\", \"\\r\",\n"
+    "                        \"\\t\", \"\\b\", \"\\f\" and \"\\u00XX\"-style escapes\n"
+    "                        back into their original bytes. The line's\n"
+    "                        own terminating LF is left untouched either\n"
+    "                        way.\n"
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
     "          [The following option is for professional]\n"
     "          -p n ........ Process priority setting [0-3] (if possible)\n"
@@ -231,8 +250,8 @@ void print_usage_and_exit(void) {
     "                        but if failed, it will try the smaller numbers.\n"
 #endif
     "Package      : tokideli\n"
-    "Version      : 1.1.1\n"
-    "Last Updated : 2026-10-15 00:40:40 JST\n"
+    "Version      : 1.2.0\n"
+    "Last Updated : 2026-10-16 15:22:26 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -304,7 +323,7 @@ for (i=0; *(gpszCmdname+i)!='\0'; i++) {
 }
 
 if (argc>=2 && strcmp(argv[1],"--version")==0) {
-  printf("%s (tokideli) 1.1.1\n", gpszCmdname);
+  printf("%s (tokideli) 1.2.0\n", gpszCmdname);
   return 0;
 }
 if (setenv("POSIXLY_CORRECT","1",1) < 0) {
@@ -321,8 +340,9 @@ iKeepTs      = 0; /* 0>:Keep timestamps, =0:Drop(default) */
 giTypingmode = 0;
 iPrio        = 1;
 giVerbose    = 0;
+giJsonMode   = 0;
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "ceIp:1kuyvhZz")) != -1) {
+while ((i=getopt(argc, argv, "ceIp:1kuyjvhZz")) != -1) {
   switch (i) {
     case 'c': iMode&=4; iMode+=0;            break;
     case 'e': iMode&=4; iMode+=1;            break;
@@ -333,6 +353,7 @@ while ((i=getopt(argc, argv, "ceIp:1kuyvhZz")) != -1) {
     case 'k': iKeepTs=1;                     break;
     case 'u': (void)setenv("TZ", "UTC0", 1); break;
     case 'y': giTypingmode=1;                break;
+    case 'j': giJsonMode=1;                  break;
     #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
       case 'p': if (sscanf(optarg,"%d",&iPrio) != 1) {print_usage_and_exit();}
                                               break;
@@ -1035,6 +1056,172 @@ int read_1st_field_as_a_timestamp(FILE *fp, char *pszTime) {
   }
 }
 
+/*=== Output one byte of the payload, un-escaping it if -j was given =
+ * [in]  iByte       : the next raw byte of the payload (never EOF;
+ *                      callers must handle EOF themselves)
+ *       giJsonMode  : (must be defined as a global variable)
+ * [i/o] *piJState   : 0:normal 1:just saw a backslash 2:collecting the
+ *                      4 hex digits of a "\u" escape. Persists across
+ *                      calls within the same line (and across fgets()
+ *                      chunk boundaries of a single long line), so a
+ *                      caller must keep passing the same 3 variables
+ *                      for an entire line and reset them to 0 before
+ *                      starting the next one.                       */
+void output_1payloadbyte(int iByte, int *piJState, int *piJHexval,
+                          int *piJHexleft) {
+
+  /*--- Variables --------------------------------------------------*/
+  int iDigit;
+
+  /*--- Pass through unchanged when -j wasn't given -----------------*/
+  if (! giJsonMode) {
+    while (putchar((unsigned char)iByte)==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #1: %s\n",
+                 strerror(errno));
+    }
+    return;
+  }
+
+  /*--- state 0: looking for the next backslash ---------------------*/
+  if (*piJState==0) {
+    if (iByte=='\\') {*piJState=1; return;}
+    while (putchar((unsigned char)iByte)==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #2: %s\n",
+                 strerror(errno));
+    }
+    return;
+  }
+
+  /*--- state 1: just saw a backslash, decide what it escapes -------*/
+  if (*piJState==1) {
+    *piJState=0;
+    switch (iByte) {
+      case '"' : iByte='"' ;                        break;
+      case '\\': iByte='\\';                        break;
+      case '/' : iByte='/' ;                        break;
+      case 'b' : iByte='\b';                         break;
+      case 'f' : iByte='\f';                         break;
+      case 'n' : iByte='\n';                         break;
+      case 'r' : iByte='\r';                         break;
+      case 't' : iByte='\t';                         break;
+      case 'u' : *piJState=2; *piJHexval=0; *piJHexleft=4; return;
+      default  :
+        /* Not a recognized escape; defensively pass both bytes
+         * through literally instead of silently losing data.      */
+        while (putchar('\\')==EOF) {
+          if (errno==EINTR) {continue;}
+          error_exit(errno,"output_1payloadbyte(): putchar() #3: %s\n",
+                     strerror(errno));
+        }
+        break;
+    }
+    while (putchar((unsigned char)iByte)==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #4: %s\n",
+                 strerror(errno));
+    }
+    return;
+  }
+
+  /*--- state 2: collecting the 4 hex digits of a "\u" escape -------*/
+  if      (iByte>='0' && iByte<='9') {iDigit=iByte-'0'   ;}
+  else if (iByte>='a' && iByte<='f') {iDigit=iByte-'a'+10;}
+  else if (iByte>='A' && iByte<='F') {iDigit=iByte-'A'+10;}
+  else {
+    /* Malformed "\u" escape (non-hex digit); flush what we have as
+     * literal bytes instead of silently losing data, then treat this
+     * byte as ordinary (non-escaped) payload.                      */
+    flush_1payload_state(piJState,piJHexval,piJHexleft);
+    output_1payloadbyte(iByte,piJState,piJHexval,piJHexleft);
+    return;
+  }
+  *piJHexval = (*piJHexval << 4) | iDigit;
+  (*piJHexleft)--;
+  if (*piJHexleft > 0) {return;}
+  *piJState = 0;
+  /*--- Encode the decoded code point as UTF-8 ----------------------*/
+  if        (*piJHexval <= 0x7F ) {
+    while (putchar((unsigned char)( *piJHexval             ))==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #5: %s\n",
+                 strerror(errno));
+    }
+  } else if (*piJHexval <= 0x7FF) {
+    while (putchar((unsigned char)(0xC0|( *piJHexval>>6    )))==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #6: %s\n",
+                 strerror(errno));
+    }
+    while (putchar((unsigned char)(0x80|( *piJHexval&0x3F  )))==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #7: %s\n",
+                 strerror(errno));
+    }
+  } else                          {
+    while (putchar((unsigned char)(0xE0|( *piJHexval>>12   )))==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #8: %s\n",
+                 strerror(errno));
+    }
+    while (putchar((unsigned char)(0x80|((*piJHexval>>6 )&0x3F)))==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #9: %s\n",
+                 strerror(errno));
+    }
+    while (putchar((unsigned char)(0x80|( *piJHexval    &0x3F)))==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"output_1payloadbyte(): putchar() #10: %s\n",
+                 strerror(errno));
+    }
+  }
+  return;
+}
+
+/*=== Flush any dangling incomplete escape sequence ===================
+ * Called right before the line's own real terminator is written (or
+ * at EOF), so a trailing lone backslash or a truncated "\u" escape
+ * isn't silently swallowed: whatever was collected so far is written
+ * out literally, and the state is reset to 0.                        */
+void flush_1payload_state(int *piJState, int *piJHexval, int *piJHexleft) {
+
+  /*--- Variables --------------------------------------------------*/
+  char szHex[5];
+
+  /*--- Nothing pending ----------------------------------------------*/
+  if (*piJState==0) {return;}
+
+  /*--- A lone trailing backslash ------------------------------------*/
+  if (*piJState==1) {
+    *piJState=0;
+    while (putchar('\\')==EOF) {
+      if (errno==EINTR) {continue;}
+      error_exit(errno,"flush_1payload_state(): putchar() #1: %s\n",
+                 strerror(errno));
+    }
+    return;
+  }
+
+  /*--- A truncated "\u" escape (re-render whatever digits came in) -*/
+  *piJState=0;
+  while (putchar('\\')==EOF) {
+    if (errno==EINTR) {continue;}
+    error_exit(errno,"flush_1payload_state(): putchar() #2: %s\n",
+               strerror(errno));
+  }
+  while (putchar('u')==EOF) {
+    if (errno==EINTR) {continue;}
+    error_exit(errno,"flush_1payload_state(): putchar() #3: %s\n",
+               strerror(errno));
+  }
+  snprintf(szHex,sizeof(szHex),"%0*x",4-*piJHexleft,*piJHexval);
+  if (fputs(szHex,stdout) < 0) {
+    error_exit(errno,"flush_1payload_state(): fputs(): %s\n",strerror(errno));
+  }
+  return;
+}
+
 /*=== Read and write only one line ===================================
  * [in] fp    : Filehandle for read
  * [ret] == 1 : Finished reading/writing due to '\n', which is the last
@@ -1048,24 +1235,56 @@ int read_and_write_a_line(FILE *fp) {
   char       szBuf[LINE_BUF]; /* Buffer for reading 1-line */
   int        iLen;            /* Actual size of string in the buffer */
   int        iChar;           /* Buffer for reading 1-char */
+  int        i;               /* all-purpose int                     */
+  int        iJState  = 0;    /* -j payload-unescape state (see
+                                  output_1payloadbyte()), fresh per line */
+  int        iJHexval  = 0;   /* -j "\u" hex accumulator                */
+  int        iJHexleft = 0;   /* -j "\u" hex digits still needed        */
 
   /*--- Reading and writing a line (normal mode) -------------------*/
   if (! giTypingmode) {
     while (fgets(szBuf,LINE_BUF,fp) != NULL) {
-      if (fputs(szBuf,stdout) < 0) {
-        error_exit(errno,"fputs() #RW1L-1: %s\n",strerror(errno));
-      }
       iLen = strnlen(szBuf, LINE_BUF);
-      if (szBuf[iLen-1] == '\n') {return 1;}
+      if (! giJsonMode) {
+        if (fputs(szBuf,stdout) < 0) {
+          error_exit(errno,"fputs() #RW1L-1: %s\n",strerror(errno));
+        }
+        if (szBuf[iLen-1] == '\n') {return 1;}
+      } else {
+        int iPayloadlen = (szBuf[iLen-1]=='\n') ? iLen-1 : iLen;
+        for (i=0;i<iPayloadlen;i++) {
+          output_1payloadbyte((unsigned char)szBuf[i],
+                               &iJState,&iJHexval,&iJHexleft);
+        }
+        if (szBuf[iLen-1] == '\n') {
+          flush_1payload_state(&iJState,&iJHexval,&iJHexleft);
+          while (putchar('\n')==EOF) {
+            if (errno==EINTR) {continue;}
+            error_exit(errno,"putchar() #RW1L-5: %s\n",strerror(errno));
+          }
+          return 1;
+        }
+      }
       if (iLen < LINE_BUF-1) {
         iChar=getc(fp);
         if (iChar==EOF ) {if (feof(  fp)) {return -1;}
                           if (ferror(fp)) {return -2;}
                           else            {return -3;}}
-        while (putchar(iChar)==EOF) {
-          error_exit(errno,"putchar() #RW1L-1: %s\n",strerror(errno));
+        if (iChar=='\n') {
+          if (giJsonMode) {flush_1payload_state(&iJState,&iJHexval,&iJHexleft);}
+          while (putchar('\n')==EOF) {
+            if (errno==EINTR) {continue;}
+            error_exit(errno,"putchar() #RW1L-1: %s\n",strerror(errno));
+          }
+          return 1;
         }
-        if (iChar=='\n') {return 1;                   }
+        if (! giJsonMode) {
+          while (putchar(iChar)==EOF) {
+            error_exit(errno,"putchar() #RW1L-1: %s\n",strerror(errno));
+          }
+        } else {
+          output_1payloadbyte(iChar,&iJState,&iJHexval,&iJHexleft);
+        }
       }
     }
     if (feof(  fp)) {return -1;}
@@ -1087,9 +1306,13 @@ int read_and_write_a_line(FILE *fp) {
                }
                return 1;
     default  :
-               if (putchar(iChar)==EOF) {
-                 error_exit(errno,"putchar() #RW1L-3: %s\n",
-                            strerror(errno));
+               if (! giJsonMode) {
+                 if (putchar(iChar)==EOF) {
+                   error_exit(errno,"putchar() #RW1L-3: %s\n",
+                              strerror(errno));
+                 }
+               } else {
+                 output_1payloadbyte(iChar,&iJState,&iJHexval,&iJHexleft);
                }
                break;
   }
@@ -1097,22 +1320,44 @@ int read_and_write_a_line(FILE *fp) {
     iLen = strnlen(szBuf, LINE_BUF);
     if (szBuf[iLen-1] == '\n') {
       szBuf[iLen-1] = '\0';
-      if (fputs(szBuf,stdout) < 0) {
-        error_exit(errno,"fputs() #RW1L-2: %s\n",strerror(errno));
+      if (! giJsonMode) {
+        if (fputs(szBuf,stdout) < 0) {
+          error_exit(errno,"fputs() #RW1L-2: %s\n",strerror(errno));
+        }
+      } else {
+        for (i=0;i<iLen-1;i++) {
+          output_1payloadbyte((unsigned char)szBuf[i],
+                               &iJState,&iJHexval,&iJHexleft);
+        }
+        flush_1payload_state(&iJState,&iJHexval,&iJHexleft);
       }
       return 1;
     }
-    if (fputs(szBuf,stdout) < 0) {
-      error_exit(errno,"fputs() #RW1L-3: %s\n",strerror(errno));
+    if (! giJsonMode) {
+      if (fputs(szBuf,stdout) < 0) {
+        error_exit(errno,"fputs() #RW1L-3: %s\n",strerror(errno));
+      }
+    } else {
+      for (i=0;i<iLen;i++) {
+        output_1payloadbyte((unsigned char)szBuf[i],
+                             &iJState,&iJHexval,&iJHexleft);
+      }
     }
     if (iLen < LINE_BUF-1) {
       iChar=getc(fp);
       if (iChar==EOF ) {if (feof(  fp)) {return -1;}
                         if (ferror(fp)) {return -2;}
                         else            {return -3;}}
-      if (iChar=='\n') {return 1;                   }
-      while (putchar(iChar)==EOF) {
-        error_exit(errno,"putchar() #RW1L-4: %s\n",strerror(errno));
+      if (iChar=='\n') {
+        if (giJsonMode) {flush_1payload_state(&iJState,&iJHexval,&iJHexleft);}
+        return 1;
+      }
+      if (! giJsonMode) {
+        while (putchar(iChar)==EOF) {
+          error_exit(errno,"putchar() #RW1L-4: %s\n",strerror(errno));
+        }
+      } else {
+        output_1payloadbyte(iChar,&iJState,&iJHexval,&iJHexleft);
       }
     }
   }
