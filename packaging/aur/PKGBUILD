@@ -1,6 +1,6 @@
 # Maintainer: Shell-Shoccar Japan (@shellshoccarjpn)
 pkgname=tokideli
-pkgver=1.1.1
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="A collection of lightweight POSIX-compliant commands for accurate time management (note: 'sleep' is installed as 'tdsleep' to avoid overwriting coreutils' sleep)"
 arch=('x86_64' 'aarch64')
@@ -9,7 +9,7 @@ license=('Unlicense')
 makedepends=('gcc')
 install="$pkgname.install"
 source=("$pkgname-$pkgver.tar.gz::https://github.com/ShellShoccar-jpn/tokideli/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('9a039c3125ce73337acc1e7d8d7040d235f3fb11838e080ddfc6cc679484e630')
+sha256sums=('71fadb53c1479107d39d8e965245a65cb78dda9c43729c37ad7674acfdda7fbf')
 
 build() {
   cd "$pkgname-$pkgver"
