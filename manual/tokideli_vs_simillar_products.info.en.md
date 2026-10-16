@@ -4,9 +4,9 @@
 
 Some of tokideli's commands look, at first glance, conceptually similar to well-known existing commands. "Why not just use the existing one instead — isn't this reinventing the wheel?" is a fair question to ask. So here, based on actual investigation and measurement of the corresponding existing commands, we explain, command by command, why each tokideli command was implemented anew anyway.
 
-## `valve` vs [`pv`](https://www.ivarch.com/programs/pv.shtml)'s `-L` Option
+## `valve` vs [pv](https://www.ivarch.com/programs/pv.shtml)'s `-L` Option
 
-Limiting a data transfer to a constant rate is not something only [valve(1)](valve.man.en.md) does. The well-known [`pv`](https://www.ivarch.com/programs/pv.shtml) command has an equivalent feature in its `-L` option.
+Limiting a data transfer to a constant rate is not something only [valve(1)](valve.man.en.md) does. The well-known [pv](https://www.ivarch.com/programs/pv.shtml) command has an equivalent feature in its `-L` option.
 
 The conclusion of comparing the two can be summed up in one line: `pv -L`'s precision is simply too coarse and too loose. Looking at pv 1.11.0's source code (`src/pv/loop.c`, `src/pv/transfer.c`), `-L` turns out to be a discrete token-bucket scheme that only replenishes the sendable quota once every 100 milliseconds, and even detecting that quota itself depends on `select()` polling with a fixed 90-millisecond timeout. These two coarse, mutually unsynchronized periods — a 100ms token refill and a 90ms poll — beat against each other and produce jitter.
 
@@ -32,7 +32,7 @@ rom1v/delay is memory-efficient and easy to understand, but lacks operational fl
 
 ## `linets`/`charts` vs `ts` ([moreutils](https://github.com/pgdr/moreutils))
 
-Among existing commands, moreutils' `ts` is the closest match to the idea of attaching a timestamp to each line.
+Among existing commands, [moreutils](https://github.com/pgdr/moreutils)' `ts` is the closest match to the idea of attaching a timestamp to each line.
 
 `ts` is implemented in Perl. Perhaps because some consider Perl an outdated language and are reluctant to depend on it, an [unofficial, Go-based reimplementation of moreutils](https://github.com/sweetbbak/go-moreutils) has even appeared. And indeed, `ts`'s slowness is hard to deny. Running the same job (attaching a leading timestamp to 100,000 lines) through both commands showed `ts` taking roughly twice as long.
 
@@ -53,7 +53,7 @@ Wall-clock time (real) shows roughly a 1.9x gap, and user CPU time alone shows r
 
 On the feature side, the differences are:
 
-* The output format is freely customizable, so [linets(1)](linets.man.en.md)/[charts(1)](charts.man.en.md) have no real complaint here. Calendar date-time, UNIX time, and extended ISO 8601 format are all supported down to microsecond precision.
+* On the point of output-format flexibility, there's no real complaint about `ts`. Calendar date-time, UNIX time, and extended ISO 8601 format are all supported by [linets(1)](linets.man.en.md)/[charts(1)](charts.man.en.md) too, down to microsecond precision.
 * `ts`'s `-s` (elapsed time since the program started) corresponds to `linets`'s `-z`. However, `ts` has no equivalent to `linets`'s `-Z` (elapsed time since the first line of the text data arrived).
 * `linets` timestamps the moment the **first character** of a line arrives. `ts`, on the other hand, timestamps the moment its read loop (`while (<>)`) finishes reading the entire line — i.e., when the line's end (newline or EOF) arrives.
 * Choosing `ts`'s `-i` (elapsed time since the previous timestamp) makes the output show only the delta; there's no way to get both the absolute timestamp and the delta at once. `linets`'s `-d` option, by contrast, outputs both the absolute timestamp in column 1 and the elapsed time since the previous line in column 2, simultaneously.
@@ -66,9 +66,9 @@ On the feature side, the differences are:
 
 ## `charts`/`linets`/`tscat` vs [asciinema](https://asciinema.org/)
 
-asciinema is a wonderful tool. It can record and replay what happens on a terminal screen, and since its data is text-based (JSON Lines, with a `.cast` extension), it's also lightweight.
+[asciinema](https://asciinema.org/) is a wonderful tool. It can record and replay what happens on a terminal screen, and since its data is text-based (JSON Lines, with a `.cast` extension), it's also lightweight.
 
-That said, asciinema's `.cast` format is built with the assumption that it will only ever be consumed by asciinema itself. It is text, but each line is a JSON array of the form `[time, type, data]`, and the `data` field is escaped as a JSON string. So while a human can read it as text, processing it directly with general-purpose text tools like `grep` or `sed` is difficult — you need a JSON parser first.
+That said, `asciinema`'s `.cast` format is built with the assumption that it will only ever be consumed by `asciinema` itself. It is text, but each line is a JSON array of the form `[time, type, data]`, and the `data` field is escaped as a JSON string. So while a human can read it as text, processing it directly with general-purpose text tools like `grep` or `sed` is difficult — you need a JSON parser first.
 
 What we wanted was something more general-purpose: a tool that simply controls the flow of the data itself passing through standard input/output. The timestamped text that [charts(1)](charts.man.en.md), [linets(1)](linets.man.en.md), and [tscat(1)](tscat.man.en.md) produce has no JSON-array structure wrapped around it, so it can be fed straight into ordinary UNIX text tools — `grep`, `sed`, `awk`, and the like.
 
@@ -76,11 +76,11 @@ That said, the `.cast` format and the format tokideli's commands produce are, in
 
 ### Verdict
 
-asciinema and these tokideli commands aren't in a relationship where one is "better" and should be chosen over the other. asciinema specializes in recording and replaying terminal-screen interaction, while these commands pursue the more general goal of recording and replaying the flow of standard input/output itself. If anything, the two should become mutually convertible and build a friendly relationship, rather than compete.
+`asciinema` and these tokideli commands aren't in a relationship where one is "better" and should be chosen over the other. `asciinema` specializes in recording and replaying terminal-screen interaction, while these commands pursue the more general goal of recording and replaying the flow of standard input/output itself. If anything, the two should become mutually convertible and build a friendly relationship, rather than compete.
 
 ## `ptw` vs `unbuffer` ([expect](https://sourceforge.net/projects/expect/))
 
-The problem [ptw(1)](ptw.man.en.md) solves — forcing a command's output buffering mode to line-buffered — is, on paper, also something `unbuffer`, which ships with expect, can handle. But comparing the two in practice leads to the conclusion that `unbuffer` is simply too poorly made to take seriously.
+The problem [ptw(1)](ptw.man.en.md) solves — forcing a command's output buffering mode to line-buffered — is, on paper, also something `unbuffer`, which ships with [expect](https://sourceforge.net/projects/expect/), can handle. But comparing the two in practice leads to the conclusion that `unbuffer` is simply too poorly made to take seriously.
 
 ### Startup and processing overhead
 
@@ -144,4 +144,4 @@ Comparing this against `ptw` isn't even really worth doing. On top of the perfor
 
 ## Summary
 
-None of the existing commands covered here were ignored simply because they "didn't exist" — each was investigated and found to fall short of what tokideli aims for, whether in precision, performance, features, or reliability, which is why it was implemented anew. Some, like `pv -L` and `unbuffer`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v/delay and `ts`, come down not to a simple matter of one being better, but to a difference in intended use case. And still others, like asciinema, are not competitors at all, but something tokideli should aim to interoperate with in the future.
+None of the existing commands covered here were ignored simply because they "didn't exist" — each was investigated and found to fall short of what tokideli aims for, whether in precision, performance, features, or reliability, which is why it was implemented anew. Some, like `pv -L` and `unbuffer`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v/delay and `ts`, come down not to a simple matter of one being better, but to a difference in intended use case. And still others, like `asciinema`, are not competitors at all, but something tokideli should aim to interoperate with in the future.
