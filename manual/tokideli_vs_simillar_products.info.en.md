@@ -142,11 +142,11 @@ This is not something that happens deterministically upon hitting some fixed lim
 
 [A comment on Hacker News](https://news.ycombinator.com/item?id=42401011) points out that `unbuffer` ends up mixing standard output and standard error together. Verifying this directly confirmed it.
 
-A test script was set up that alternately writes "OUT-1" through "OUT-3" to standard output and "ERR-1" through "ERR-3" to standard error, then run through each wrapper with the two streams redirected to separate files via `1>`/`2>`.
+A small C program was built that does nothing but alternately write "OUT-1" through "OUT-3" to standard output and "ERR-1" through "ERR-3" to standard error (a shell script was avoided here, since it couldn't rule out the result being some side effect of the scripting language's own implementation), then run through each wrapper with the two streams redirected to separate files via `1>`/`2>`.
 
 ```sh:
-$ ptw         ./test.sh 1>out_ptw.txt   2>err_ptw.txt
-$ unbuffer -p ./test.sh 1>out_unbuf.txt 2>err_unbuf.txt
+$ ptw         ./test_c 1>out_ptw.txt   2>err_ptw.txt
+$ unbuffer -p ./test_c 1>out_unbuf.txt 2>err_unbuf.txt
 ```
 
 The results were as follows.

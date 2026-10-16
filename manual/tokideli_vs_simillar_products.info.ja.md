@@ -142,11 +142,11 @@ read(0, <unfinished ...>)
 
 [Hacker Newsのあるコメント](https://news.ycombinator.com/item?id=42401011)で、`unbuffer`は標準出力と標準エラー出力を混在させてしまうという指摘がある。実際に検証してみたところ、その通りだった。
 
-標準出力に"OUT-1"〜"OUT-3"、標準エラー出力に"ERR-1"〜"ERR-3"を交互に出力するテストスクリプトを用意し、`1>`・`2>`で両者を別々のファイルへリダイレクトした状態で、それぞれのコマンド経由で実行してみた。
+標準出力に"OUT-1"〜"OUT-3"、標準エラー出力に"ERR-1"〜"ERR-3"を交互に出力するだけの単純なCプログラムをビルドし（シェルスクリプトを対象にすると、スクリプト言語の実装に起因する副作用である可能性を排除できないため）、`1>`・`2>`で両者を別々のファイルへリダイレクトした状態で、それぞれのコマンド経由で実行してみた。
 
 ```sh:
-$ ptw         ./test.sh 1>out_ptw.txt   2>err_ptw.txt
-$ unbuffer -p ./test.sh 1>out_unbuf.txt 2>err_unbuf.txt
+$ ptw         ./test_c 1>out_ptw.txt   2>err_ptw.txt
+$ unbuffer -p ./test_c 1>out_unbuf.txt 2>err_unbuf.txt
 ```
 
 結果は次のとおりである。
