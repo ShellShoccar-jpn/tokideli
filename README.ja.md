@@ -46,7 +46,7 @@ $ cat /PATH/TO/textdata_source | valve -l 1s
 解決できるうえに、何とシンプルな記述なのでしょう！　実際に素朴な`while`〜`sleep`ループと`valve -l`を録画したものが以下です。上（素朴なループ）は10周でおよそ0.27秒もずれてしまうのに対し、下（`valve`）のずれはわずか0.02秒程度に収まっています。
 
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/3d0735d8-b737-4221-8644-9af8a19b5f25" controls muted playsinline width="520">naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s</video><br>
+  <video src="https://github.com/user-attachments/assets/4a4d8720-ae3c-4ed3-9d8e-d71e67d32691" controls muted playsinline width="520">naive while/sleep loop drifts by +0.27s over 10 iterations, while valve -l stays within +0.02s</video><br>
   <sub>この録画を再現するスクリプト: <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.sh">demo.sh</a> / <a href="https://github.com/ShellShoccar-jpn/tokideli-assets/blob/main/demo.tape">demo.tape</a>（<a href="https://github.com/charmbracelet/vhs">vhs</a>の録画レシピ）</sub>
 </p>
 
