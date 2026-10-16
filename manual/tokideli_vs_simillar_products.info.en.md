@@ -138,9 +138,31 @@ In other words, `interact`'s internal loop is implemented as a greedy "keep read
 
 This is not something that happens deterministically upon hitting some fixed limit, such as a kernel buffer size. Whether a `read` or a `write` gets called next is a **race condition** that depends on the timing of data arriving on the upstream pipe and on OS scheduling. The more data there is (i.e., the more times `read` gets called), the higher the odds of unluckily landing on this "read-only" streak at the exact moment the upstream pipe goes momentarily empty. As a result, how much data gets processed before a freeze (or data loss) occurs varies from run to run, and a single run can't tell you "how many lines are safe."
 
+### Bug 3: It mixes standard output and standard error together
+
+[A comment on Hacker News](https://news.ycombinator.com/item?id=42401011) points out that `unbuffer` ends up mixing standard output and standard error together. Verifying this directly confirmed it.
+
+A test script was set up that alternately writes "OUT-1" through "OUT-3" to standard output and "ERR-1" through "ERR-3" to standard error, then run through each wrapper with the two streams redirected to separate files via `1>`/`2>`.
+
+```sh:
+$ ptw         ./test.sh 1>out_ptw.txt   2>err_ptw.txt
+$ unbuffer -p ./test.sh 1>out_unbuf.txt 2>err_unbuf.txt
+```
+
+The results were as follows.
+
+| | contents of out_*.txt | contents of err_*.txt |
+|---|---|---|
+| `ptw` | `OUT-1`/`OUT-2`/`OUT-3` (stdout only) | `ERR-1`/`ERR-2`/`ERR-3` (stderr only) |
+| `unbuffer -p` | `OUT-1`/`ERR-1`/`OUT-2`/`ERR-2`/`OUT-3`/`ERR-3` (both mixed together) | (empty) |
+
+With `unbuffer`, everything written to standard error ends up mixed into the standard-output file, leaving the standard-error file empty. With `ptw`, the two streams stay correctly separated throughout.
+
+The cause is a difference in implementation. `unbuffer` (the Tcl/Expect `unbuffer` script) launches the target process internally via the `spawn` command, and Expect's `spawn` is specified to connect both the child's standard output and standard error to the same single pseudo-terminal (PTY). This isn't really a bug specific to `unbuffer` so much as a constraint of Expect's `spawn` itself. `ptw`, by contrast, connects only standard output to the PTY slave and never touches standard error at all, so standard error stays on the file descriptor it inherited from the caller, never passing through the PTY, and keeps a path completely independent from standard output.
+
 ### Verdict
 
-Comparing this against `ptw` isn't even really worth doing. On top of the performance weakness of its high startup cost, `unbuffer` carries two distinct, genuinely harmful bugs: it cuts off unprocessed data the moment the upstream exits, and it can freeze or lose data to a race condition during large transfers. For tokideli's purpose — accurately recording and replaying the timing of data as it arrives — it is not a tool that can be trusted.
+Comparing this against `ptw` isn't even really worth doing. On top of the performance weakness of its high startup cost, `unbuffer` carries three distinct, genuinely harmful bugs: it cuts off unprocessed data the moment the upstream exits, it can freeze or lose data to a race condition during large transfers, and it mixes standard output and standard error together. For tokideli's purpose — accurately recording and replaying the timing of data as it arrives — it is not a tool that can be trusted.
 
 ## Summary
 
