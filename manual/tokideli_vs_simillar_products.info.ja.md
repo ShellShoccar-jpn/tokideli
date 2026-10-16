@@ -103,7 +103,7 @@ $ time echo x | ptw cat > /dev/null
 
 ```sh:
 $ seq 4000 | unbuffer -p tr 1 1 | cat > with_unbuffer.txt
-$ seq 4000 | ptw tr 1 1          | cat > with_ptw.txt
+$ seq 4000 | ptw tr 1 1         | cat > with_ptw.txt
 ```
 
 `ptw`は4000行すべてを約9msで出力する一方、`unbuffer`は実行のたびに結果が変わるが、いずれにしても4000行には遠く及ばない行数（実測では21行程度）しか出力されず、しかも処理自体はごく短時間で終了してしまう。

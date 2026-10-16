@@ -103,7 +103,7 @@ Try relaying the 4000 lines `seq` produces through `tr` with the following one-l
 
 ```sh:
 $ seq 4000 | unbuffer -p tr 1 1 | cat > with_unbuffer.txt
-$ seq 4000 | ptw tr 1 1          | cat > with_ptw.txt
+$ seq 4000 | ptw tr 1 1         | cat > with_ptw.txt
 ```
 
 `ptw` outputs all 4000 lines in about 9ms. `unbuffer`, by contrast, gives a different result on every run, but in every case ends up with far fewer lines than 4000 (around 21 lines, in a measurement taken for this document) — and the whole thing finishes in a very short time regardless.
