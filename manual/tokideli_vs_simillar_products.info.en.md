@@ -164,6 +164,65 @@ The cause is a difference in implementation. `unbuffer` (the Tcl/Expect `unbuffe
 
 Comparing this against `ptw` isn't even really worth doing. On top of the performance weakness of its high startup cost, `unbuffer` carries three distinct, genuinely harmful bugs: it cuts off unprocessed data the moment the upstream exits, it can freeze or lose data to a race condition during large transfers, and it mixes standard output and standard error together. For tokideli's purpose — accurately recording and replaying the timing of data as it arrives — it is not a tool that can be trusted.
 
+## `ptw` vs `pipetty`（[colorized-logs](https://github.com/kilobyte/colorized-logs)）
+
+`pipetty`, included in [colorized-logs](https://github.com/kilobyte/colorized-logs), is another command, just like `ptw`, that wraps a command through a pseudo-terminal (PTY) to defeat full buffering. Its core design (allocate one PTY, connect the wrapped command's standard output to it, and relay whatever comes out of the master side verbatim) is essentially the same as `ptw`'s, but it differs in a few respects.
+
+### It mixes standard output and standard error together
+
+Looking at `pipetty`'s source (`pipetty.c`), it connects both standard output and standard error to the same PTY slave:
+
+```c
+dup2(slave, 1);
+dup2(slave, 2);
+```
+
+This is the same defect as `unbuffer`, covered above. Using the same small C program (`test_c`) that alternately writes to standard output and standard error, redirected to separate files via `1>`/`2>`, gave the same kind of result as `unbuffer -p`.
+
+```sh:
+$ pipetty ./test_c 1>out_pipetty.txt 2>err_pipetty.txt
+```
+
+| | contents of out_pipetty.txt | contents of err_pipetty.txt |
+|---|---|---|
+| `pipetty` | `OUT-1`/`ERR-1`/`OUT-2`/`ERR-2`/`OUT-3`/`ERR-3` (both mixed together) | (empty) |
+
+`ptw`, by contrast, connects only standard output to the PTY slave (`dup2(giFd1s, STDOUT_FILENO)`) and never touches standard error at all, so standard error stays on the file descriptor it inherited from the caller, keeping a path completely independent from standard output.
+
+### It unconditionally allocates a PTY
+
+`ptw` has a shortcut: if its own standard output is already connected to a terminal (e.g., it sits at the end of a pipeline writing straight to a terminal), it skips allocating a PTY and simply `exec()`s the wrapped command directly (overridable with the `-f` option). When already connected to a real terminal, the wrapped command can already tell its own standard output is a terminal, so there's no need to fake one with a PTY in the first place. `pipetty`'s `main()` has no such check and always allocates a PTY unconditionally. In interactive, direct-to-terminal use, `ptw` therefore avoids an unnecessary startup cost that `pipetty` doesn't.
+
+### Throughput on large transfers
+
+Comparing the two by relaying a large volume of data generated with `yes` through `tr`, `ptw` came out slightly faster (measured in this document's test environment at the time of writing; 100 million lines, average of several runs).
+
+```sh:
+$ time yes | head -n 100000000 | ptw     tr 1 1 | cat > /dev/null
+$ time yes | head -n 100000000 | pipetty tr 1 1 | cat > /dev/null
+```
+
+| | `ptw` | `pipetty` |
+|---|---:|---:|
+| real | ~1.28s | ~1.38s |
+
+Checking the number of read/write system calls with `strace -c` showed almost the same count for both (`ptw` uses an 8KiB internal buffer and `pipetty` a 16KiB one, but that difference doesn't show up in the call count, since the PTY's own internal buffering granularity dominates over the user-space buffer size).
+
+The cause of the gap turned out to be a difference in the termios attributes set on the PTY slave. `pipetty` puts the slave into full raw mode via `cfmakeraw()` (clearing ICANON, ISIG, IXON, OPOST, and more all at once), whereas `ptw` selectively clears only `ECHO`/`ECHONL`/`ECHOE`/`ECHOK` (echo-related) and `ONLCR`/`TABDLY` (newline translation and tab expansion), leaving `ICANON` (canonical mode) untouched. Swapping the relevant code between the two and re-measuring gave:
+
+| Variant | Slave-side termios setting | real |
+|---|---|---:|
+| `ptw` (original) | ICANON kept, only echo-related flags and ONLCR/TABDLY cleared | ~1.28s |
+| `ptw` forced into full raw mode | equivalent to `cfmakeraw()` (ICANON cleared too) | ~1.36s |
+| `pipetty` (original) | full raw mode via `cfmakeraw()` | ~1.38s |
+| `pipetty` with `cfmakeraw()` removed | left at the default (ECHO still on, too) | ~32.6s (over 25x slower) |
+
+Two things fall out of this. First, the single most important thing both commands get right is turning ECHO off: removing `cfmakeraw()` from `pipetty`, leaving ECHO on, made it over 25 times slower. Both commands turn ECHO off, just by different means, so neither falls into this catastrophic regime. Second, the remaining 7-8% gap traces to whether ICANON is kept or cleared. For line-oriented data like `tr 1 1`'s output, keeping ICANON on appears to be very slightly cheaper for the kernel to process, which gives `ptw`'s narrower, more selective set of changes a small edge over `pipetty`'s blanket switch to full raw mode, at least in this environment.
+
+### Verdict
+
+`pipetty`'s core design is the same as `ptw`'s, and it's far lighter than `unbuffer`, which pays the cost of starting a Tcl interpreter on every invocation. Even so, `ptw` holds a clear edge: `pipetty` carries the same "mixes standard output and standard error together" defect as `unbuffer`, it always allocates a PTY unconditionally, and it comes out slightly behind `ptw` on throughput for large transfers.
+
 ## Summary
 
-None of the existing commands covered here were ignored simply because they "didn't exist" — each was investigated and found to fall short of what tokideli aims for, whether in precision, performance, features, or reliability, which is why it was implemented anew. Some, like `pv -L` and `unbuffer`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v/delay and `ts`, come down not to a simple matter of one being better, but to a difference in intended use case. And still others, like `asciinema`, are not competitors at all, but something tokideli should aim to interoperate with in the future.
+None of the existing commands covered here were ignored simply because they "didn't exist" — each was investigated and found to fall short of what tokideli aims for, whether in precision, performance, features, or reliability, which is why it was implemented anew. Some, like `pv -L`, `unbuffer`, and `pipetty`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v/delay and `ts`, come down not to a simple matter of one being better, but to a difference in intended use case. And still others, like `asciinema`, are not competitors at all, but something tokideli should aim to interoperate with in the future.
