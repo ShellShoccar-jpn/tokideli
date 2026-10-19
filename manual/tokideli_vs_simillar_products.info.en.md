@@ -223,6 +223,90 @@ Two things fall out of this. First, the single most important thing both command
 
 `pipetty`'s core design is the same as `ptw`'s, and it's far lighter than `unbuffer`, which pays the cost of starting a Tcl interpreter on every invocation. Even so, `ptw` holds a clear edge: `pipetty` carries the same "mixes standard output and standard error together" defect as `unbuffer`, it always allocates a PTY unconditionally, and it comes out slightly behind `ptw` on throughput for large transfers.
 
+## `ptw` vs `script` (util-linux)
+
+It was pointed out that the problem `ptw` solves — forcing a command's output buffering mode to line-buffered — could also be handled by `script`, a command that ships standard on most UNIX-like OSes. But comparing the two in practice leads to the conclusion that `script` is simply not suited at all for the use case tokideli is aiming for: a pipe filter that transparently relays standard input/output.
+
+### Advantage: no extra installation needed
+
+Unlike `pipetty` or `unbuffer` (which ships with expect), `script` comes preinstalled on nearly every UNIX-like OS (util-linux on Linux; equivalent commands exist on macOS and the BSDs too). On the point of adoption barrier, `script` clearly has the edge.
+
+### It mixes standard output and standard error together
+
+Running the target program directly via `script -c command file`, using the same small test program (`test_c`, the same one used in the `unbuffer`/`pipetty` verification) that alternately writes to standard output and standard error, reproduced the same defect found in `unbuffer` and `pipetty`.
+
+```sh:
+$ script -qec ./test_c -E never output_file
+```
+
+| | contents of the recorded file | the program's real standard error |
+|---|---|---|
+| `script` | `OUT-1`/`ERR-1`/`OUT-2`/`ERR-2`/`OUT-3`/`ERR-3` (both mixed together) | (empty) |
+
+`script` offers no option to opt out of this mixing.
+
+### A more serious defect: output gets duplicated when the destination is a pipe
+
+`script` is designed around explicitly naming an output file on the command line (`script [options] file`, defaulting to `typescript` if omitted); unlike `ptw`, it isn't built with the idea of "streaming straight to standard output." Pointing `file` at `/dev/stdout` in order to feed a downstream pipe exposed an unexpected and serious defect.
+
+```sh:
+$ seq 1 5 | script -qec "tr 1 1" -E never /dev/stdout | cat
+```
+
+The result prints `1` through `5` **twice** (with "Script started..."/"Script done..." header lines from the recording mixed in as well). The cause is that `script` always writes the same data down two independent paths: a "live view" (its own genuine standard output) and a "recording" (the file). Pointing the `file` argument at `/dev/stdout` makes these two paths happen to converge on the same pipe, so the data comes out twice.
+
+The same thing doesn't happen when the destination is a regular file (since `script` can tell "the live-view terminal" and "the recording file" are different things). Avoiding it requires discarding `script`'s own standard output to `/dev/null` and pointing the recording destination at a named pipe (FIFO) read by a separate process.
+
+```sh:
+$ mkfifo fifo
+$ ( seq 1 5 | script -qec "tr 1 1" -E never fifo >/dev/null 2>&1 & )
+$ cat fifo
+```
+
+This workaround avoids the duplication, but it no longer fits into a simple one-line pipeline like `cmd1 | script ... | cmd2` — it needs a FIFO to be created, a background job, and cleanup afterward. `ptw`, `pipetty`, and `unbuffer` can all simply be wired straight into standard input/output, so on this point alone `script` is at a considerable practical disadvantage.
+
+### Input gets echoed back and duplicated (avoidable)
+
+By default (`-E auto`), `script` enables ECHO on the PTY slave whenever standard input is not a terminal (i.e., a pipe). This is a deliberate design choice — so that data arriving via a pipe can also be recorded/viewed live — but for a `ptw`-style transparent filter, it means the input data gets mixed back into the output and duplicated. Specifying `-E never` explicitly avoids this duplication (all the verification above was run with `-E never` already specified).
+
+### Newlines get converted from LF to CRLF
+
+Because `OPOST`/`ONLCR` are enabled by default on the PTY slave, every `\n` in the data gets recorded as `\r\n`. `ptw` performs no such conversion. If exact binary comparison or `diff` is a requirement, this conversion is another defect that breaks transparency.
+
+### Header lines are always inserted at the start and end (unavoidable)
+
+Even with `-q` (quiet), all it suppresses is the notice shown on the "live view" side — **the recording file always gets** the following header, blank line, and trailer inserted, with no option to turn this off.
+
+```text:
+Script started on 2026-10-19 19:33:06+09:00 [COMMAND="./test_c" <not executed on terminal>]
+(the actual data)
+(a blank line)
+Script done on 2026-10-19 19:33:06+09:00 [COMMAND_EXIT_CODE="0"]
+```
+
+`ptw` simply relays the wrapped command's output byte-for-byte and never inserts extra lines like this.
+
+### Throughput on large transfers
+
+Using the FIFO scheme to avoid the duplication, the two were compared relaying 1 million lines through `tr 1 1` (measured in this document's test environment at the time of writing; average of 3 runs).
+
+```sh:
+$ time (yes | head -n 1000000 | ptw tr 1 1 > /dev/null)
+$ mkfifo fifo
+$ time ( { yes | head -n 1000000 | script -qec "tr 1 1" -E never fifo >/dev/null 2>&1 ; } & cat fifo > /dev/null ; wait )
+```
+
+| | `ptw` | `script` (via FIFO) |
+|---|---:|---:|
+| real | ~0.018s | ~6.4s |
+| sys | ~0.02s | ~5.9s |
+
+**`ptw` is roughly 360 times faster.** That `sys` time accounts for over 90% of the total mirrors the same tendency found in the `pipetty` investigation — kernel-side overhead from PTY-related processing such as ECHO/ICANON.
+
+### Verdict
+
+`script` has a low adoption barrier thanks to being preinstalled, but it is simply not suited, by design, for the use case `ptw` targets — transparently relaying standard input/output. On top of the stdout/stderr-mixing defect it shares with the others, it has what may be the most easily-overlooked structural flaw found in this whole investigation: output gets duplicated when the destination is a pipe. Add to that the newline conversion, the unavoidable header lines, and the dramatically worse performance, and the preinstalled advantage — real as it is — isn't enough on its own to make `script` a substitute for `ptw`.
+
 ## Summary
 
 None of the existing commands covered here were ignored simply because they "didn't exist" — each was investigated and found to fall short of what tokideli aims for, whether in precision, performance, features, or reliability, which is why it was implemented anew. Some, like `pv -L`, `unbuffer`, and `pipetty`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v/delay and `ts`, come down not to a simple matter of one being better, but to a difference in intended use case. And still others, like `asciinema`, are not competitors at all, but something tokideli should aim to interoperate with in the future.
