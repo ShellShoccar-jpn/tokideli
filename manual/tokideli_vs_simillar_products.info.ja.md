@@ -208,16 +208,30 @@ $ time yes | head -n 100000000 | pipetty tr 1 1 | cat > /dev/null
 
 `strace -c`で読み書きのシステムコール回数を調べたところ、両者は`read`・`write`ともほぼ同数だった（内部バッファサイズが`ptw`は8KiB、`pipetty`は16KiBと異なるにもかかわらず、PTY自体の内部バッファ粒度の方が優先されるため、呼び出し回数には反映されない）。
 
-この差の原因は、PTYスレーブに設定するtermios属性の違いにある。`pipetty`は`cfmakeraw()`でスレーブを完全なrawモード（ICANON・ISIG・IXON・OPOSTなどを全て解除）にしている一方、`ptw`は`ECHO`・`ECHONL`・`ECHOE`・`ECHOK`（エコー関連）と`ONLCR`・`TABDLY`（改行変換・タブ展開）だけを選択的に解除し、`ICANON`（カノニカルモード）はそのまま残す。それぞれのコードの該当部分を入れ替えて実験したところ、次のようになった。
+`pipetty`と`ptw`では、PTYスレーブに設定するtermios属性が異なる。`pipetty`は`cfmakeraw()`でスレーブを完全なrawモードにしており、`ICANON`・`ISIG`・`IXON`・`IEXTEN`（行編集・シグナル生成・フロー制御関連）と`OPOST`（出力後処理の総元締め。`ONLCR`・`TABDLY`等を含む）をすべて解除している。一方`ptw`は、`ECHO`・`ECHONL`・`ECHOE`・`ECHOK`（エコー関連）と`ONLCR`・`TABDLY`（改行変換・タブ展開）だけを選択的に解除し、`ICANON`・`ISIG`・`IXON`・`IEXTEN`・`OPOST`はそのまま残す。それぞれのコードの該当部分を入れ替えて実験したところ、次のようになった。
 
 | 版 | スレーブ側termios設定 | real |
 |---|---|---:|
-| `ptw`（原版） | ICANON維持、ECHO系とONLCR/TABDLYのみ解除 | 約1.28s |
-| `ptw`をフルraw化 | `cfmakeraw()`相当（ICANONも解除） | 約1.36s |
+| `ptw`（原版） | ICANON・ISIG・IXON・IEXTEN・OPOSTは維持、ECHO系とONLCR/TABDLYのみ解除 | 約1.28s |
+| `ptw`をフルraw化 | `cfmakeraw()`相当（すべて解除） | 約1.36s |
 | `pipetty`（原版） | `cfmakeraw()`でフルraw化 | 約1.38s |
-| `pipetty`から`cfmakeraw()`を削除 | 既定値のまま（ECHOもON） | 約32.6s（25倍以上遅い） |
+| `pipetty`から`cfmakeraw()`を削除 | 既定値のまま（すべてON） | 約32.6s（25倍以上遅い） |
 
-これにより2点が分かる。1つは、両コマンドに共通して最も重要なのは「ECHOを切ること」である点。`pipetty`から`cfmakeraw()`を取り除いてECHOがONのままになると、25倍以上遅くなった。`ptw`・`pipetty`とも方法は違えどECHOはきちんと切っているため、この壊滅的な劣化は両者とも回避している。もう1つは、残る7〜8%程度の差が、ICANONを残すか外すかの違いに起因する点である。`tr 1 1`のような行単位のデータでは、ICANONを残した方がカーネル側の処理がわずかに軽いようで、`ptw`が選択的に切るだけの最小限の変更に留めていることが、この環境ではわずかに有利に働いている。
+これらのフラグを1つずつ単独で切り替えて検証したところ、速度に実質的な影響を与えていたのは`ONLCR`と`OPOST`の2つだけだった。
+
+`pipetty`から`cfmakeraw()`を削除した場合の25倍以上の劣化は、`ONLCR`（出力中の`\n`を`\r\n`に変換する処理）が単独の原因だった。`ONLCR`だけを単独でONにすると約33.1sまで悪化し、`cfmakeraw()`を削除した場合とほぼ同じ水準になる一方、`ECHO`だけを単独でONにしても速度は変わらなかった（約1.34s対約1.37s）。これはPTYの構造上理にかなっている。`ICANON`・`ISIG`・`ECHO`などが制御する行編集・エコー処理は、PTYでは「マスターへの書き込み→スレーブの読み出し」という**入力**方向にのみ適用される仕組みであり、`ptw`・`pipetty`はいずれも子プロセスの標準出力（＝**出力**方向）だけをPTYスレーブに接続しているため、ECHOの設定はそもそも効きようがない。`ONLCR`は出力方向を処理する`c_oflag`に属するフラグであり、こちらが実際の処理コストの正体である。
+
+`ptw`原版（1.28s）と`pipetty`原版（1.38s）の差は、`OPOST`が単独の原因だった。`ICANON`・`ISIG`・`IXON`・`IEXTEN`を個別に、あるいは4つ同時に変更しても原版との間に再現性のある差は見られなかった一方、`OPOST`だけを単独でOFFにすると、次のように`real`・`sys`・voluntary context switchesのいずれも実物の`pipetty`とほぼ同じ値まで悪化した。
+
+| | `ptw`原版<br>(OPOST ON) | `ptw`(OPOST OFFのみ変更) | `pipetty`実物 |
+|---|---:|---:|---:|
+| real（1億行、3回平均） | 約1.36s | 約1.44s | 約1.45s |
+| sys | 約2.09s | 約1.74s | 約1.76s |
+| voluntary context switches | 約65,500 | 約83,300 | 約79,900 |
+
+原因はLinuxカーネルの`drivers/tty/n_tty.c`の`n_tty_write()`にある。`OPOST`の有無で完全に別のコードパスに分岐しており、`OPOST`がONの時だけ使われる`process_output_block()`は書き込み前に空きバッファ量（`tty_write_room()`）を確認してから書き込む一方、`OPOST`がOFFの時は空き容量を確認せず`pty_write()`を直接・無条件に呼ぶ。後者の経路の方がこの環境では`voluntary context switches`が多くなり、結果としてCPU使用時間（sys）は減るのに全体の所要時間（real）は増えるという、`pipetty`で見られた特徴的な逆転が生じる。
+
+同じ検証を、`ptw`が動作確認済みの他のUNIX系OS（FreeBSD 12.1・Solaris 11.3・macOS 15.8）でも行ったが、いずれも`OPOST`の有無による有意な速度差は見られなかった（FreeBSD・SolarisはむしろOFFの方がわずかに速い傾向すらあり、macOSは実質差なし・0.6%未満）。この現象はLinuxカーネルの実装に特有のものであり、一般的なPOSIX上の原理ではない。
 
 ### 総評
 

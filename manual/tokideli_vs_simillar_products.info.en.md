@@ -208,16 +208,30 @@ $ time yes | head -n 100000000 | pipetty tr 1 1 | cat > /dev/null
 
 Checking the number of read/write system calls with `strace -c` showed almost the same count for both (`ptw` uses an 8KiB internal buffer and `pipetty` a 16KiB one, but that difference doesn't show up in the call count, since the PTY's own internal buffering granularity dominates over the user-space buffer size).
 
-The cause of the gap turned out to be a difference in the termios attributes set on the PTY slave. `pipetty` puts the slave into full raw mode via `cfmakeraw()` (clearing ICANON, ISIG, IXON, OPOST, and more all at once), whereas `ptw` selectively clears only `ECHO`/`ECHONL`/`ECHOE`/`ECHOK` (echo-related) and `ONLCR`/`TABDLY` (newline translation and tab expansion), leaving `ICANON` (canonical mode) untouched. Swapping the relevant code between the two and re-measuring gave:
+`pipetty` and `ptw` set different termios attributes on the PTY slave. `pipetty` puts the slave into full raw mode via `cfmakeraw()`, clearing `ICANON`/`ISIG`/`IXON`/`IEXTEN` (line-editing, signal generation, and flow control) and `OPOST` (the master output-processing switch, which covers `ONLCR`/`TABDLY` among others) all at once. `ptw`, by contrast, selectively clears only `ECHO`/`ECHONL`/`ECHOE`/`ECHOK` (echo-related) and `ONLCR`/`TABDLY` (newline translation and tab expansion), leaving `ICANON`/`ISIG`/`IXON`/`IEXTEN`/`OPOST` untouched. Swapping the relevant code between the two and re-measuring gave:
 
 | Variant | Slave-side termios setting | real |
 |---|---|---:|
-| `ptw` (original) | ICANON kept, only echo-related flags and ONLCR/TABDLY cleared | ~1.28s |
-| `ptw` forced into full raw mode | equivalent to `cfmakeraw()` (ICANON cleared too) | ~1.36s |
+| `ptw` (original) | ICANON/ISIG/IXON/IEXTEN/OPOST kept, only echo-related flags and ONLCR/TABDLY cleared | ~1.28s |
+| `ptw` forced into full raw mode | equivalent to `cfmakeraw()` (everything cleared) | ~1.36s |
 | `pipetty` (original) | full raw mode via `cfmakeraw()` | ~1.38s |
-| `pipetty` with `cfmakeraw()` removed | left at the default (ECHO still on, too) | ~32.6s (over 25x slower) |
+| `pipetty` with `cfmakeraw()` removed | left at the default (everything on) | ~32.6s (over 25x slower) |
 
-Two things fall out of this. First, the single most important thing both commands get right is turning ECHO off: removing `cfmakeraw()` from `pipetty`, leaving ECHO on, made it over 25 times slower. Both commands turn ECHO off, just by different means, so neither falls into this catastrophic regime. Second, the remaining 7-8% gap traces to whether ICANON is kept or cleared. For line-oriented data like `tr 1 1`'s output, keeping ICANON on appears to be very slightly cheaper for the kernel to process, which gives `ptw`'s narrower, more selective set of changes a small edge over `pipetty`'s blanket switch to full raw mode, at least in this environment.
+Toggling these flags one at a time showed that only two of them, `ONLCR` and `OPOST`, had any real effect on speed.
+
+The over-25x slowdown from removing `cfmakeraw()` from `pipetty` comes down to `ONLCR` alone (the processing that converts `\n` to `\r\n` in the output). Toggling `ONLCR` on by itself degrades things to ~33.1s, essentially matching the level seen with `cfmakeraw()` removed entirely, while toggling `ECHO` on by itself changes nothing (~1.34s vs ~1.37s). This makes sense given how a PTY is structured: the line-editing and echo processing governed by `ICANON`/`ISIG`/`ECHO` and the like only apply, on a PTY, to the **input** direction — writes to the master being read back from the slave. Both `ptw` and `pipetty` connect only the child's standard output (the **output** direction) to the PTY slave, so ECHO's setting simply has nothing to act on here. `ONLCR`, on the other hand, is an output-direction flag (`c_oflag`), and it's the real source of the processing cost.
+
+The remaining gap between `ptw`'s original (~1.28s) and `pipetty`'s original (~1.38s) comes down to `OPOST` alone. Toggling `ICANON`/`ISIG`/`IXON`/`IEXTEN` individually, or all four together, produced no reproducible difference from the original. Toggling only `OPOST` off, however, degrades all three of real time, sys time, and voluntary context switches to roughly the same level as real `pipetty`:
+
+| | `ptw` original<br>(OPOST on) | `ptw` (OPOST off only) | real `pipetty` |
+|---|---:|---:|---:|
+| real (100M lines, avg of 3) | ~1.36s | ~1.44s | ~1.45s |
+| sys | ~2.09s | ~1.74s | ~1.76s |
+| voluntary context switches | ~65,500 | ~83,300 | ~79,900 |
+
+The cause is in Linux's `drivers/tty/n_tty.c`: `n_tty_write()` takes a genuinely different code path depending on `OPOST`. When it's on, `process_output_block()` checks the available buffer room (`tty_write_room()`) before writing; when it's off, the write goes straight to `pty_write()` unconditionally, with no such check. The latter path produces more voluntary context switches in this environment, which is consistent with the odd-looking pattern seen with `pipetty`: less CPU time (sys) but more wall-clock time (real) overall.
+
+The same comparison was repeated on the other UNIX-like OSes `ptw` is already verified to build and run on — FreeBSD 12.1, Solaris 11.3, and macOS 15.8 — and none of them showed a significant speed difference tied to `OPOST` (FreeBSD and Solaris, if anything, leaned slightly toward OFF being faster; macOS showed essentially no difference, under 0.6%). This effect is specific to Linux's kernel implementation, not a general POSIX-level principle.
 
 ### Verdict
 
