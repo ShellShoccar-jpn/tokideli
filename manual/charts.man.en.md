@@ -40,7 +40,7 @@ If the -d option is also used, the same precision is applied to the elapsed time
 
 Specifies the format of the timestamp. -c, -e, -I, -z, and -Z mean, respectively: calendar time, UNIX time, extended ISO 8601 format, the number of seconds elapsed since this command started, and the number of seconds elapsed since the first character of the text data arrived; these options are mutually exclusive. If none of them is given, -c is assumed.
 
-The exact byte-level format of each is identical to [linets(1)](linets.man.en.md)'s corresponding option, with "line" read as "character" throughout (e.g. -Z's elapsed time is measured from the first *character* of the text data, not the first line).
+The exact byte-level format of each is identical to [linets(1)](linets.man.en.md)'s corresponding option, with "line" read as "character" throughout (e.g. -Z's elapsed time is measured from the first *character* of the text data, not the first line). The same goes for being able to reset the -z/-Z origin at runtime with SIGUSR1/SIGUSR2; see [linets(1)](linets.man.en.md#resetting-the-origin-with-sigusr1sigusr2) for the details.
 
 ### -1
 
