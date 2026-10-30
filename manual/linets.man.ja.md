@@ -204,4 +204,4 @@ $ cat DATA_SOURCE | ptw grep "" | linets -3e
 
 ## 関連項目
 
-[tscat(1)](tscat.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)、[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md)
+[charts(1)](charts.man.ja.md)、[tscat(1)](tscat.man.ja.md)、[行単位でデータを遅延出力する方法](delayed_output_line_by_line.info.ja.md)、[赤ちゃんの初タイピングを記録・再生する方法（typeliner & linets & tscatコマンドチュートリアル）](rec_baby_typing.info.ja.md)、[動画ライブ配信のように一定時間データ到達を遅らせて平滑化する](smooth_out_data_delivery_like_live_video_streaming.info.ja.md)、[tokideliと類似機能を持つコマンドとの優位性比較 ― 車輪の再発明をした理由](tokideli_vs_simillar_products.info.ja.md)
