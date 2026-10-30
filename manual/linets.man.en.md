@@ -92,6 +92,12 @@ That is: the integer *n* representing the number of seconds elapsed since the fi
 
 Consequently, the timestamp of the first line is always 0. This is not merely 0 within the significant digits shown — it is exactly 0 — so no fractional part is shown for it.
 
+#### Resetting the origin with SIGUSR1/SIGUSR2
+
+For both -z and -Z, sending this process SIGUSR1 while it's running resets the origin used for the elapsed-seconds column (the first column). With -z, the new origin is the instant the signal itself arrives; with -Z, the new origin is the arrival time of the next line to come in after the signal (so the origin doesn't change until then).
+
+Sending SIGUSR2 does the same, and also resets the origin used by -d's second column (the elapsed seconds since the previous line). With -z, that origin also becomes the signal's own arrival time, so the first line's second column after the reset is the elapsed time since the signal arrived. With -Z, that origin also becomes the arrival time of the very next line, so the first line's second column after the reset is always 0.
+
 ### -1
 
 At startup, outputs one line (LF) that has nothing to do with the data coming from standard input. The purpose of this option is to prevent a deadlock when building a bidirectional pipe between this command and an AWK or shell script. (See the AWK script example in the [Examples](#examples) section.)

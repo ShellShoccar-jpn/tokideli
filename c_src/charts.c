@@ -36,10 +36,17 @@
 #                                (",n" is the same as -c)
 #                         -z ... "n[.n]"
 #                                The number of seconds since this command
-#                                started (".n" is the same as -c)
+#                                started (".n" is the same as -c). Sending
+#                                this process SIGUSR1 resets the origin to
+#                                the moment the signal arrives; SIGUSR2
+#                                does the same and also resets -d's delta-t
+#                                baseline to that same moment.
 #                         -Z ... "n[.n]"
 #                                The number of seconds since the first
-#                                character came (".n" is the same as -c)
+#                                character came (".n" is the same as -c).
+#                                SIGUSR1/SIGUSR2 behave as they do for -z,
+#                                except the new origin becomes the next
+#                                character's arrival time, not the signal's.
 #           -1 ........ * Output one LF character at first before
 #                         outputting the incoming data.
 #                       * This option might work as a starter of the
@@ -71,7 +78,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-16
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-31
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -113,6 +120,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <locale.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -143,6 +151,9 @@ int  read_I1st_1unit(FILE *fp);
 int  read_Z1st_1unit(FILE *fp);
 void print_cur_timestamp(void);
 void output_1byte(int iByte);
+void rebase_zero_to_now(int iAlsoResetPrev);
+void reset_zero_now(int iSig, siginfo_t *siInfo, void *pct);
+void request_rebase(int iSig, siginfo_t *siInfo, void *pct);
 
 /*--- global variables ---------------------------------------------*/
 char*     gpszCmdname      ; /* The name of this command                      */
@@ -158,6 +169,10 @@ int       giByteMode  =  0 ; /* 1 if -b (force byte mode) is given            */
 int       giJsonMode  =  0 ; /* JSON-escape the incoming data when >0 (-j)    */
 tmsp      gtsZero     = {0}; /* Time this command booted                      */
 tmsp      gtsPrev     = {0}; /* Time the previous character has come         */
+volatile sig_atomic_t
+          giRebaseReq =  0 ; /* for -Z origin + SIGUSR1/SIGUSR2 (request_rebase()):
+                                 0:none pending  1:gtsZero only pending
+                                 2:gtsZero and gtsPrev (-d's Δt) pending       */
 int       giHold      =  0 ; /* for read_1char_unit(): 1 if the next
                                  character has already been fetched           */
 char      gszNextchar[MB_LEN_MAX]; /* for read_1char_unit(): raw bytes of
@@ -198,10 +213,18 @@ void print_usage_and_exit(void) {
     "                               (\",n\" is the same as -c)\n"
     "                        -z ... \"n[.n]\"\n"
     "                               The number of seconds since this command\n"
-    "                               started (\".n\" is the same as -c)\n"
+    "                               started (\".n\" is the same as -c). Send\n"
+    "                               this process SIGUSR1 to reset the origin\n"
+    "                               to the moment the signal arrives; SIGUSR2\n"
+    "                               does the same and also resets -d's\n"
+    "                               delta-t baseline to that same moment.\n"
     "                        -Z ... \"n[.n]\"\n"
     "                               The number of seconds since the first\n"
-    "                               character came (\".n\" is the same as -c)\n"
+    "                               character came (\".n\" is the same as -c).\n"
+    "                               SIGUSR1/SIGUSR2 behave as they do for -z,\n"
+    "                               except the new origin becomes the next\n"
+    "                               character's arrival time, not the\n"
+    "                               signal's.\n"
     "          -1 ........ * Output one LF character at first before\n"
     "                        outputting the incoming data.\n"
     "                      * This option might work as a starter of the\n"
@@ -231,7 +254,7 @@ void print_usage_and_exit(void) {
     "Retuen  : Return 0 only when finished successfully\n"
     "Package      : tokideli\n"
     "Version      : 1.2.0\n"
-    "Last Updated : 2026-10-16 15:22:26 JST\n"
+    "Last Updated : 2026-10-31 01:31:09 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -329,6 +352,30 @@ while ((i=getopt(argc, argv, "0369ceIzZ1bdujvh")) != -1) {
 argc -= optind-1;
 argv += optind  ;
 if (giVerbose>0) {warning("verbose mode (level %d)\n",giVerbose);}
+
+/*=== Register SIGUSR1/SIGUSR2 handlers for -z/-Z origin reset =====*/
+/* Meaningless for -c/-e/-I, which keep the default disposition for
+ * both signals. giFmtType is still exactly 'z' or 'Z' here (the
+ * internal 'Z'->'z' rewrite happens later, in read_Z1st_1unit()), so
+ * it alone decides which handler function gets bound: the one for
+ * -z captures the signal's own arrival time directly; the one for -Z
+ * only raises a flag, because -Z's new origin has to be the next
+ * character's arrival time, not the signal's (see rebase_zero_to_now()). */
+if (giFmtType=='z' || giFmtType=='Z') {
+  struct sigaction saUsr;
+  memset(&saUsr, 0, sizeof(saUsr));
+  sigemptyset(&saUsr.sa_mask);
+  saUsr.sa_sigaction = (giFmtType=='z') ? reset_zero_now : request_rebase;
+  saUsr.sa_flags     = SA_SIGINFO | SA_RESTART;
+  if (sigaction(SIGUSR1,&saUsr,NULL) != 0) {
+    error_exit(errno,"sigaction() for SIGUSR1 in main(): %s\n",
+                     strerror(errno)                            );
+  }
+  if (sigaction(SIGUSR2,&saUsr,NULL) != 0) {
+    error_exit(errno,"sigaction() for SIGUSR2 in main(): %s\n",
+                     strerror(errno)                            );
+  }
+}
 
 /*=== Set up locale handling (skipped entirely when -b is given) ===*/
 /* setlocale() fails silently (just returns NULL, leaving the "C" locale
@@ -584,10 +631,70 @@ void write_1char(const char *pszUnit, int iLen) {
 }
 
 
+/*=== Re-anchor gtsZero (and optionally gtsPrev) to the current time ==
+ * [in] iAlsoResetPrev : also re-anchor gtsPrev to the same instant when
+ *                       nonzero (the "full reset" used by SIGUSR2 and
+ *                       by -Z's very first character, which has always
+ *                       reset both anyway)
+ *      gtsZero        : (must be defined as a global variable)
+ *      gtsPrev        : (must be defined as a global variable)       */
+void rebase_zero_to_now(int iAlsoResetPrev) {
+  tmsp tsNow;
+  if (clock_gettime(CLOCK_MONOTONIC,&tsNow) != 0) {
+    error_exit(errno,"rebase_zero_to_now(): clock_gettime(): %s\n",
+                     strerror(errno)                                );
+  }
+  gtsZero.tv_sec=tsNow.tv_sec; gtsZero.tv_nsec=tsNow.tv_nsec;
+  if (iAlsoResetPrev) {
+    gtsPrev.tv_sec=tsNow.tv_sec; gtsPrev.tv_nsec=tsNow.tv_nsec;
+  }
+  return;
+}
+
+/*=== SIGHANDLER (for -z origin) : reset gtsZero to this instant ======
+ * Called for both SIGUSR1 and SIGUSR2; only SIGUSR2 also resets
+ * gtsPrev (the -d delta-t baseline) to the same instant. clock_gettime()
+ * is not on POSIX's strict async-signal-safe list, but every platform
+ * this project targets implements it as a plain syscall/vDSO read with
+ * no locking or allocation, so calling it here is safe in practice; it
+ * is also unavoidable, since -z's spec is "reset to the signal's own
+ * arrival time", which only this handler ever gets to observe (the
+ * main thread, blocked in getc(), does not learn of the signal until
+ * whenever the next byte happens to arrive).
+ * [in] iSig : SIGUSR1 or SIGUSR2, whichever triggered this call       */
+void reset_zero_now(int iSig, siginfo_t *siInfo, void *pct) {
+  tmsp tsNow;
+  (void)siInfo; (void)pct;
+  if (clock_gettime(CLOCK_MONOTONIC,&tsNow) != 0) {return;}
+  gtsZero.tv_sec=tsNow.tv_sec; gtsZero.tv_nsec=tsNow.tv_nsec;
+  if (iSig==SIGUSR2) {
+    gtsPrev.tv_sec=tsNow.tv_sec; gtsPrev.tv_nsec=tsNow.tv_nsec;
+  }
+  return;
+}
+
+/*=== SIGHANDLER (for -Z origin) : request a rebase on the next char ==
+ * Unlike reset_zero_now(), this only raises a flag: -Z's spec is "reset
+ * to the next character's arrival time", so the actual clock_gettime()
+ * has to happen in read_1char_unit(), not here. A later signal's request
+ * always overwrites a still-unconsumed earlier one (last-signal-wins);
+ * this can in principle race with read_1char_unit() clearing giRebaseReq
+ * (plain sig_atomic_t, no atomic read-modify-write), but the worst case
+ * is one signal's request getting folded into/overwritten by another
+ * that arrives within the same handful of instructions, which is
+ * harmless.
+ * [in] iSig : SIGUSR1 or SIGUSR2, whichever triggered this call       */
+void request_rebase(int iSig, siginfo_t *siInfo, void *pct) {
+  (void)siInfo; (void)pct;
+  giRebaseReq = (iSig==SIGUSR2) ? 2 : 1;
+  return;
+}
+
 /*=== Read and write only one character ===============================
  * [in]  giHold     : (must be defined as a global variable)
  *       gszNextchar: (must be defined as a global variable)
  *       giNextlen  : (must be defined as a global variable)
+ *       giRebaseReq: (must be defined as a global variable)
  * [ret] 0          : Finished reading/writing one character,
  *                    and more data may follow
  *       1          : Finished reading/writing one character,
@@ -598,6 +705,7 @@ int read_1char_unit(FILE *fp) {
   /*--- Variables --------------------------------------------------*/
   char szUnit[MB_LEN_MAX];
   int  iLen;
+  int  iReq;
 
   /*--- Fetch the character (reuse the lookahead if we have one) ---*/
   if (giHold) {
@@ -609,6 +717,9 @@ int read_1char_unit(FILE *fp) {
   }
 
   /*--- Print the timestamp, then the character ---------------------*/
+  if (giRebaseReq) {
+    iReq=giRebaseReq; giRebaseReq=0; rebase_zero_to_now(iReq==2);
+  }
   print_cur_timestamp();
   write_1char(szUnit, iLen);
 
@@ -825,15 +936,13 @@ int read_Z1st_1unit(FILE *fp) {
 
   /*--- Fetch the first character -----------------------------------*/
   if (fetch_1char(fp,szUnit,&iLen)==EOF) {return EOF;}
-  /* Re-anchor gtsZero to this unit's arrival time, on the same
-   * CLOCK_MONOTONIC basis as the initial one in main().               */
-  if (clock_gettime(CLOCK_MONOTONIC,&gtsZero) != 0) {
-    error_exit(errno,"read_Z1st_1unit(): clock_gettime(): %s\n",
-                     strerror(errno)                            );
-  }
+  /* The true first character always resets both gtsZero and gtsPrev to
+   * this instant, regardless of any pending SIGUSR1/SIGUSR2 request
+   * (there is nothing meaningful for an earlier signal to have rebased
+   * yet).                                                              */
+  rebase_zero_to_now(1); giRebaseReq=0;
   if (giDeltaMode) {
     printf("0 0 ");
-    gtsPrev.tv_sec=gtsZero.tv_sec; gtsPrev.tv_nsec=gtsZero.tv_nsec;
   } else           {
     printf("0 ");
   }
