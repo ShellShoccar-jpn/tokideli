@@ -10,7 +10,9 @@ If you want to limit a data transfer to a constant rate, the claim goes, there's
 
 But as far as we're concerned, it comes down to one line: `pv -L`'s precision is simply too coarse and loose. Looking at pv 1.11.0's source code (`src/pv/loop.c`, `src/pv/transfer.c`), `-L` turns out to be a discrete token-bucket scheme that only replenishes its sendable quota once every 100 milliseconds, and even detecting that quota depends on `select()` polling with a fixed 90-millisecond timeout. These two coarse periods, which never synchronize with each other, beat against one another and produce jitter.
 
-`valve`, on the other hand, directly computes the absolute time at which the next chunk should be sent and calls `nanosleep()` against it, so error never accumulates. In a measured 1-line-per-second test, the standard deviation of the interval came out to 0.288ms for `valve` versus 3.573ms for `pv -L` — nearly an order of magnitude apart. The full design comparison and measurement data are written up in the [Report on the Transfer-Rate Precision of the valve Command](valve_precision.info.en.md).
+`valve`, on the other hand, uses a simple scheme: each time it sends a chunk, it checks the clock and computes how long it needs to sleep until the next send so that every interval comes out the same, then calls `nanosleep()` for that long. This produces no jitter. On top of that, error from the varying execution time of the surrounding processing never accumulates either.
+
+Measuring the two side by side, in a 1-line-per-second test the standard deviation of the interval came out to 0.288ms for `valve` versus 3.573ms for `pv -L` — nearly an order of magnitude apart. The full design comparison and measurement data are written up in the [Report on the Transfer-Rate Precision of the valve Command](valve_precision.info.en.md).
 
 ### Verdict
 
@@ -34,7 +36,7 @@ rom1v's `delay` is memory-efficient and easy to understand, but lacks operationa
 
 If you want to attach a timestamp to each line based on its arrival time, the claim goes, there's no need for a command like [linets(1)](linets.man.en.md) — [moreutils](https://github.com/pgdr/moreutils)' `ts` command already does that. But we had a few complaints about `ts` as well.
 
-For one thing, `ts` is implemented in Perl. Perhaps because some consider Perl an outdated language and are reluctant to depend on it, an [unofficial, Go-based reimplementation of moreutils](https://github.com/sweetbbak/go-moreutils) has even appeared. And indeed, its slowness is hard to deny. Running the same job (attaching a leading timestamp to 100,000 lines) through both commands showed `ts` taking roughly twice as long as `linets`.
+For one thing, `ts` is implemented in Perl. Perhaps because some consider Perl an outdated language and are reluctant to depend on it, an [unofficial, Go-based reimplementation of moreutils](https://github.com/sweetbbak/go-moreutils) has even appeared. And indeed, its slowness is hard to deny. Running the same job (attaching a timestamp to 100,000 lines of text data) through both commands showed `ts` taking roughly twice as long as `linets`.
 
 ```sh:
 $ time yes | head -n 100000 | ts     %.s > /dev/null
@@ -252,7 +254,7 @@ stdout: foo  # <- the BSD version mixes stdout and stderr together too (more on 
 $ 
 ```
 
-The minimum number of seconds to give `sleep` (especially the second one) isn't something you can determine theoretically — it depends on factors like the implementation and the data size. That makes the BSD version of `script` practically useless for this purpose (as a substitute for `stdbuf`).
+The minimum number of seconds to give `sleep` (especially the second one) isn't something you can determine theoretically — it depends on factors like the OS's implementation and the data size. That makes the BSD version of `script` practically useless for this purpose (as a substitute for `stdbuf`).
 
 ### Issue 2: It mixes standard output and standard error together
 
@@ -300,4 +302,4 @@ $ time yes | head -n 1000000 | script -E never -qec "tr 1 1" /dev/null >/dev/nul
 
 ## Summary
 
-None of the tokideli commands covered here were built simply because "no existing command did the same thing." In every case, investigation found that the existing option fell short of the level tokideli aims for — in precision, performance, features, or reliability — which is why it was implemented anew. Some, like `pv -L`, `unbuffer`, and `pipetty`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v's `delay` and `ts`, come down not to simple superiority but to a difference in the performance the use case demands. And still others, like `asciinema`, aren't competitors at all, but something to aim for interoperability with in the future.
+None of the tokideli commands covered here were built simply because "no existing command did the same thing." In every case, investigation found that the existing option fell short of the level tokideli aims for — in precision, performance, features, or reliability — which is why it was implemented anew. Some, like `pv -L`, `unbuffer`, and `pipetty`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v's `delay` and moreutils' `ts`, come down not to simple superiority but to a difference in the performance the use case demands. And still others, like `asciinema`, aren't competitors at all, but something to aim for interoperability with in the future.
