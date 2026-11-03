@@ -114,7 +114,7 @@
 #                  (if it doesn't work)
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -pthread
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-09
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-11-03
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -356,7 +356,7 @@ void print_usage_and_exit(void) {
     "\n"
     "Package      : tokideli\n"
     "Version      : 1.2.0\n"
-    "Last Updated : 2026-10-09 16:06:06 JST\n"
+    "Last Updated : 2026-11-03 22:43:28 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "USP-NCNT prj. / Shell-Shoccar Japan (@shellshoccarjpn),\n"
@@ -552,7 +552,7 @@ argv++;
 
 /*--- Open the drain file if specified -----------------------------*/
 if (pszDrainname != NULL) {
-  while ((iDrainFd=open(pszDrainname,O_WRONLY|O_CREAT,0644))<0) {
+  while ((iDrainFd=open(pszDrainname,O_WRONLY|O_CREAT|O_APPEND,0644))<0) {
     if (errno == EINTR) {continue;}
     error_exit(errno, "%s: %s\n", pszDrainname   ,
                                   strerror(errno) );

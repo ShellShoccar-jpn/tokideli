@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `linets`/`charts`: in `-z`/`-Z` mode, sending the process SIGUSR1 now
+  rebases the elapsed-seconds origin (column 1) on the fly — to the
+  signal's own arrival instant for `-z`, or to the next-arriving
+  line/character's instant for `-Z`. Sending SIGUSR2 does the same, and
+  additionally rebases the baseline `-d` uses for its elapsed-since-
+  previous-line column, so the first line/character after a SIGUSR2
+  reset always reports a `-d` delta of (effectively) zero.
+
+### Fixed
+
+- `relval`: the `-d` drain-file was opened without `O_APPEND`, so
+  pointing it at a pre-existing file silently overwrote its contents
+  from the beginning instead of appending, unlike every other command
+  in this project with an equivalent drain/monitor-file option
+  (`oobleck`'s `-d`, `surgetk`'s `-m`). It now opens with `O_APPEND`,
+  matching them.
+- `manual/{linets,tscat,typeliner}.man.{ja,en}.md`: several one-way
+  "See Also" gaps were found and fixed — `linets.man` was missing
+  `charts(1)`, `typeliner(1)`, and `relval(1)`; `typeliner.man` was
+  missing `charts(1)`; `tscat.man` was missing `relval(1)`, `tshead(1)`,
+  and `tstail(1)` — in each case despite the other side already linking
+  back, or the body text explicitly discussing the relationship.
+
+### Changed
+
+- `manual/linets.man.{ja,en}.md`: document the new SIGUSR1/SIGUSR2
+  behavior in its own subsection (covering both `-z` and `-Z`).
+- `manual/charts.man.{ja,en}.md`: note that `charts` inherits this same
+  SIGUSR1/SIGUSR2 behavior from `linets`, since the existing "format is
+  identical to linets(1)" sentence didn't by itself imply that the
+  signal behavior is too.
+
 ## [1.2.0] - 2026-10-16
 
 ### Added
