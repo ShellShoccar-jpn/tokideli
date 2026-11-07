@@ -6,17 +6,97 @@ Some of tokideli's commands have functionality similar to well-known existing co
 
 ## `valve` vs [pv](https://www.ivarch.com/programs/pv.shtml)'s `-L` Option
 
-If you want to limit a data transfer to a constant rate, the claim goes, there's no need to build a command like [valve(1)](valve.man.en.md) — just use the well-known [pv](https://www.ivarch.com/programs/pv.shtml) command's `-L` option.
+If you want to limit a data transfer to a constant rate, the claim goes, there's no need to build a command like [valve(1)](valve.man.en.md) — just use the well-known [pv](https://www.ivarch.com/programs/pv.shtml) command's `-L` option. But we had complaints about `pv -L` on both the quality and the feature front.
 
-But as far as we're concerned, it comes down to one line: `pv -L`'s precision is simply too coarse and loose. Looking at pv 1.11.0's source code (`src/pv/loop.c`, `src/pv/transfer.c`), `-L` turns out to be a discrete token-bucket scheme that only replenishes its sendable quota once every 100 milliseconds, and even detecting that quota depends on `select()` polling with a fixed 90-millisecond timeout. These two coarse periods, which never synchronize with each other, beat against one another and produce jitter.
+### Quality Issue 1: Low-Quality Transfer-Rate Precision
 
-`valve`, on the other hand, uses a simple scheme: each time it sends a chunk, it checks the clock and computes how long it needs to sleep until the next send so that every interval comes out the same, then calls `nanosleep()` for that long. This produces no jitter. On top of that, error from the varying execution time of the surrounding processing never accumulates either.
+It comes down to one line: `pv -L`'s precision is simply too coarse and loose. Looking at pv 1.11.0's source code (`src/pv/loop.c`, `src/pv/transfer.c`), `-L` turns out to be a discrete token-bucket scheme that only replenishes its sendable quota once every 100 milliseconds, and even detecting that quota depends on `select()` polling with a fixed 90-millisecond timeout. These two coarse periods, which never synchronize with each other, beat against one another and produce jitter.
 
-Measuring the two side by side, in a 1-line-per-second test the standard deviation of the interval came out to 0.288ms for `valve` versus 3.573ms for `pv -L` — nearly an order of magnitude apart. The full design comparison and measurement data are written up in the [Report on the Transfer-Rate Precision of the valve Command](valve_precision.info.en.md).
+`valve`, on the other hand, checks the clock each time it sends a chunk, and computes the next scheduled send time by simply adding a fixed interval length — derived from the configured rate — onto the previous scheduled send time (a virtual baseline), then calls `nanosleep()` for however long remains until that target. This produces no jitter. And because the next target is pinned to the *previous target*, not to "now," the varying execution time of the surrounding processing from one cycle to the next never affects the schedule itself, so error never accumulates either.
+
+Measuring the two side by side, in a 1-line-per-second test the standard deviation of the interval came out to 0.288ms for `valve` versus 3.573ms for `pv -L` — an order of magnitude apart. The full design comparison and measurement data are written up in the [Report on the Transfer-Rate Precision of the valve Command](valve_precision.info.en.md).
+
+### Quality Issue 2: Annoying Waits Before Data Starts and After It Ends
+
+Set `pv`'s transfer rate to 1 byte per second, feed it a single byte, send one more byte right after `pv` exits, and time when each one actually comes out — doing this shows that `pv` takes upward of about 0.9 seconds before it starts producing output at all, and that on Linux, it then sits for about another 1.0 second after outputting the last byte before it actually exits.
+
+```sh
+# Result on Linux
+$ (echo -n ^ | pv -qL 1; echo -n '$') | claude_sandbox/tokideli/bin/charts -z3d
+0.908 0.908 ^
+1.905 0.997 $
+$ 
+
+# Result on a non-Linux environment (FreeBSD)
+$ (echo -n ^ | pv -qL 1; echo -n '$') | claude_sandbox/tokideli/bin/charts -z3d
+0.949 0.949 ^
+0.950 0.000 $
+$ 
+```
+
+This, too, has a cause visible in `pv`'s source code.
+
+#### Why It Takes About 0.9 Seconds Before Data Starts
+
+As already noted, `pv` only replenishes its sendable quota once every 100 milliseconds. In the example above, the configured rate is 1 byte per second, so the quota grows by 0.1 bytes each tick — including one right at startup. But since that's still under 1 byte, nothing can be sent yet. The quota keeps climbing: 0.2 after 100ms, 0.3 after 200ms, and so on, until it reaches 1.0 byte at the 900ms mark — and that's the instant the byte finally goes out.
+
+#### Why It Doesn't Exit for About 1.0 Second After the Last Byte, on Linux
+
+On Linux, the data-sending function (`pv_transfer()` in `transfer.c`) sends data by calling `splice(2)`, a Linux-specific system call (it lets `pv` skip doing `read(2)` and `write(2)` as two separate steps), and that call is also how `pv` notices EOF. But while the sendable quota is under 1, the `splice(2)` call itself is never attempted (it's skipped entirely) — so `pv` can't notice EOF until the quota has climbed back up to 1, which takes a full second. That's what produces this behavior.
+
+On non-Linux systems, by contrast, `pv` relays data in two separate steps using the `read(2)` and `write(2)` system calls. `read(2)` gets called regardless of whether the sendable quota is 1 or more, so EOF is noticed early, and there's no long wait before the command exits.
+
+### Quality Issue 3: Bursting Part of Intermittent Data
+
+When the data source alternates between flowing and stopping, `pv -L` dumps out a burst of data right after the flow resumes.
+
+Try the one-liner below, for instance. It sets `pv`'s transfer rate to 10 bytes per second and feeds it intermittent data: first 50 bytes, then a 10-second pause, then another 100 bytes. Since `pv` takes 5 seconds to output that first chunk, it ends up with 5 seconds of idle time between finishing that output and the next chunk arriving.
+
+```sh
+# pv bursts right when the flow resumes
+$ (seq 100000001 100000005; sleep 10; seq 200000001 200000010) | pv -qL 10
+
+# [For comparison] valve, at the same configured rate, does not burst
+$ (seq 100000001 100000005; sleep 10; seq 200000001 200000010) | valve 80bps
+```
+
+Run this, and you'll see the first 50 bytes (5 lines) of the second chunk come out all at once. That behavior is correct if you read it as honoring the "average" transfer rate — the reasoning being that since output was stalled for 5 seconds, it owes you 50 bytes' worth of catch-up, dumped all at once. But if that were really the reasoning, bumping the sleep to 11 seconds should burst out 60 bytes — yet no matter how long you make the sleep, the burst never exceeds 50 bytes, which doesn't add up. And regardless, if you've got some low-powered device with only a small buffer sitting downstream of the command, a burst like this can lose data outright — which is a real problem.
+
+#### The Troublesome Reason pv Bursts
+
+The reason becomes clear once you dig into `pv`'s source code. In short, it keeps track of how many bytes it's currently allowed to send (presumably built around the idea of an *average* transfer rate), and this value keeps climbing while nothing is being output. Left completely unbounded, though, it would let bursts grow without limit. There does seem to be some awareness of this on `pv`'s side — the accumulated value is capped so it never exceeds the configured rate times 5 seconds (`RATE_BURST_WINDOW`, in `pv-internal.h`). Some amount of accumulation is necessary to actually honor the configured rate, but too much accumulation is exactly what causes a burst.
+
+#### How valve Solves This
+
+`valve` takes the following approach to this same problem:
+
+* In producing the configured transfer rate, `pv` keeps its output interval fixed (100ms) and adjusts the amount of data sent, whereas `valve` keeps the amount sent fixed at 1 byte (or 1 line) and adjusts the length of the interval (how long it calls `nanosleep()` for).
+* On each loop cycle, `valve` determines the next scheduled send time by adding a fixed interval length — derived from the configured rate — onto the previous scheduled send time, then, right before calling `nanosleep()`, reads the current time and computes how long to sleep as the gap to that target. Once it wakes up, it reads the current time again and computes the gap against the target as the "oversleep time." Twice that oversleep time (the factor is `RECOVMAX_MULTIPLIER` in `valve.c`) is then recorded as the "maximum oversleep considered recoverable" (`tsRecovmax`). If a later cycle's oversleep time ever exceeds the current `tsRecovmax`, twice that new oversleep time becomes the new `tsRecovmax`.
+* There are two distinct reasons the time a send actually starts can drift from its scheduled time: one is unpredictable code execution time (plain oversleeping), and the other is the read-side blocking caused by data arriving intermittently. If the former is the cause, it makes sense to shave time off the next cycle's sleep to catch up; if the latter is the cause, it doesn't. `tsRecovmax` is what `valve` uses to tell the two apart — if the gap is within `tsRecovmax`, it adjusts; if it exceeds `tsRecovmax`, it doesn't.
+
+Thanks to this algorithm, `valve` never bursts on data with gaps clearly longer than a typical `nanosleep()` oversleep. Conversely, it can still produce a vanishingly small burst on the order of a typical oversleep — if you want to suppress even that, the `-s` option does so. The trade-off is that it then can never catch up on lost time, so some transfer-rate error creeps in; on some platforms, the `-p` option can offset that by nudging the process scheduler to shorten the oversleep itself, keeping the error small. These considerations are, we think, another point in `valve`'s favor.
+
+### Feature Complaint: No Way to Set a Line-Based Transfer Rate
+
+`pv -L` treats the input purely as a byte stream and limits the transfer rate in byte-sized units. That makes sense for reproducing — or sending data over — the behavior of a typical communication link whose maximum rate is set in bit-sized units (i.e., 1/8-byte units). But in computing contexts (Unix-like systems especially), it's often the line, not the byte, that you actually want to rate-limit.
+
+Text data organized one record per line is common — log data is one example, and the more recent "JSON Lines" format, which packs individual JSON values one per line, is another. Since the data is already organized by line, it's natural to want to process it at a steady rate measured in lines too. But data like this has lines of variable byte length, so even a command like `pv -L` that lets you set a byte-based rate still ends up with uneven line intervals. `valve`'s `-l` option, by contrast, lets you make each line's output come out at a steady interval.
+
+Here's a simple example: say you want to download `file1.jpg` through `file100.jpg` from some website at 4-second intervals, out of consideration for server load. With `valve`, you can write it like this:
+
+```sh
+# Downloading sequentially numbered files at 4-second intervals with valve
+$ seq 1 100 | valve -l 4s | while read n; do wget "https://example.com/file${n}.jpg"; done
+
+# [For comparison] pv can just barely manage this if every line is padded to the same width
+$ seq -f '%03.0f' 1 100 | pv -qL 1 | while read n; do wget "https://example.com/file$(expr $n + 0).jpg"; done
+```
+
+Sure, you could argue this can be done without `valve` too — but the point is that `pv` can't express it this concisely. The reason it can't is that as long as each line's length varies with the number of digits, there's no way to keep the line-based interval steady.
 
 ### Verdict
 
-`pv`'s primary purpose appears to be visualizing the flow of data through a pipe — progress monitoring. Rate limiting via `-L` seems to be positioned as an add-on feature bolted onto that primary purpose. If so, it's understandable that precision wasn't a priority.
+`pv`'s primary purpose appears to be visualizing the flow of data through a pipe — progress monitoring. Rate limiting via `-L` seems to be positioned as an add-on feature bolted onto that primary purpose. If so, it's understandable that neither quality nor features were much of a priority.
 
 ## `delay` vs [rom1v/delay](https://github.com/rom1v/delay)
 
@@ -30,7 +110,7 @@ These details are written up in full in [Comparing tokideli's delay Command with
 
 ### Verdict
 
-rom1v's `delay` is memory-efficient and easy to understand, but lacks operational flexibility and fine-grained timestamp precision. tokideli's `delay` gains byte-level, nanosecond precision and runtime flexibility, at the cost of higher memory usage. Which one is the better fit depends on what you need — whether you want to conserve memory, want high precision, or care about features and portability. And what we wanted was high precision and portability.
+rom1v's `delay` is memory-efficient and easy to understand, but lacks fine-grained timestamp precision. tokideli's `delay` gains byte-level, nanosecond precision at the cost of higher memory usage. Which one is the better fit comes down to whether you want to conserve memory or want high precision. On features and portability, though, tokideli's version comes out ahead across the board — its overflow-handling modes, the ability to change settings at runtime via `controlfile`, and how much more actively it's maintained and how widely it's been verified to run — so that's less a trade-off than a straightforward advantage. And what we wanted was high precision and portability.
 
 ## `linets`/`charts` vs `ts` ([moreutils](https://github.com/pgdr/moreutils))
 
@@ -38,7 +118,7 @@ If you want to attach a timestamp to each line based on its arrival time, the cl
 
 For one thing, `ts` is implemented in Perl. Perhaps because some consider Perl an outdated language and are reluctant to depend on it, an [unofficial, Go-based reimplementation of moreutils](https://github.com/sweetbbak/go-moreutils) has even appeared. And indeed, its slowness is hard to deny. Running the same job (attaching a timestamp to 100,000 lines of text data) through both commands showed `ts` taking roughly twice as long as `linets`.
 
-```sh:
+```sh
 $ time yes | head -n 100000 | ts     %.s > /dev/null
 $ time yes | head -n 100000 | linets -6e > /dev/null
 ```
@@ -88,7 +168,7 @@ That said, the `.cast` format and the format tokideli's commands produce are, in
 
 For one thing, `unbuffer` is implemented as a Tcl script (`expect_unbuffer`), so it pays a large startup cost. Measuring the time from start to finish while processing just a single line of data with the one-liners below showed `unbuffer` taking roughly 5 to 10 times as long as `ptw` (measured in this document's test environment at the time of writing; average of 3 runs).
 
-```sh:
+```sh
 $ time echo x | unbuffer -p cat > /dev/null
 $ time echo x | ptw cat > /dev/null
 ```
@@ -101,7 +181,7 @@ $ time echo x | ptw cat > /dev/null
 
 Try relaying the 4000 lines the `seq` command produces through `tr` with the one-liners below (`tr 1 1` was picked as the relay here specifically because it leaves the data completely unchanged, so only the effect of the buffering-mode change is observed).
 
-```sh:
+```sh
 $ seq 4000 | unbuffer -p tr 1 1 | cat > with_unbuffer.txt
 $ seq 4000 | ptw         tr 1 1 | cat > with_ptw.txt
 ```
@@ -118,7 +198,7 @@ Trying this workaround on `seq 4000` in the test environment used for this docum
 
 Tracking this down with `strace` revealed a telltale pattern in `unbuffer`'s own (tclsh) system-call sequence (fd0 = standard input, fd3 = the pty connecting to the child process `tr`):
 
-```text:
+```text
 read(0, ...)
 write(3, "...", 4096)        # relayed correctly up to here
 write(3, "...", 1905)
@@ -146,7 +226,7 @@ This is why processing a large amount of data through `unbuffer` leads to data l
 
 Trying to send data from standard input to both standard output and standard error with `tee`, as below, makes both come out on standard output under `unbuffer`.
 
-```sh:
+```sh
 $ echo foo | ptw         tee /dev/stderr | sed 's/.*/stdout: &/'
 foo
 stdout: foo
@@ -177,7 +257,7 @@ dup2(slave, 2);
 
 This is the same problem as `unbuffer`, covered above. Running the same `tee`-based experiment used for `unbuffer` shows `pipetty` mixing standard output and standard error together too.
 
-```sh:
+```sh
 $ echo foo | ptw     tee /dev/stderr | sed 's/.*/stdout: &/'
 foo
 stdout: foo
@@ -197,7 +277,7 @@ That said, since the two streams wouldn't mix unless you deliberately wired them
 
 Comparing the two by relaying a large volume of data through `tr`, `ptw` came out slightly faster on Linux (in the author's test environment; 100 million lines, average of several runs).
 
-```sh:
+```sh
 $ time yes | head -n 100000000 | ptw     tr 1 1 | cat > /dev/null
 $ time yes | head -n 100000000 | pipetty tr 1 1 | cat > /dev/null
 ```
@@ -284,7 +364,7 @@ If exact binary matching or `diff`-based comparison is a requirement, this conve
 
 Running the one-liners below for `ptw` and `script` (util-linux version), we compared how long it took each one to relay 1 million lines through `tr 1 1` (measured in the author's test environment; average of 3 runs).
 
-```sh:
+```sh
 $ time yes | head -n 1000000 | ptw                   tr 1 1            >/dev/null
 $ time yes | head -n 1000000 | script -E never -qec "tr 1 1" /dev/null >/dev/null
 ```
@@ -302,4 +382,4 @@ $ time yes | head -n 1000000 | script -E never -qec "tr 1 1" /dev/null >/dev/nul
 
 ## Summary
 
-None of the tokideli commands covered here were built simply because "no existing command did the same thing." In every case, investigation found that the existing option fell short of the level tokideli aims for — in precision, performance, features, or reliability — which is why it was implemented anew. Some, like `pv -L`, `unbuffer`, and `pipetty`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like rom1v's `delay` and moreutils' `ts`, come down not to simple superiority but to a difference in the performance the use case demands. And still others, like `asciinema`, aren't competitors at all, but something to aim for interoperability with in the future.
+None of the tokideli commands covered here were built simply because "no existing command did the same thing." In every case, investigation found that the existing option fell short of the level tokideli aims for — in precision, performance, features, or reliability — which is why it was implemented anew. Some, like `pv -L`, `unbuffer`, `pipetty`, and `script`, have clear-cut roughness or defects traceable to their own design and implementation. Others, like moreutils' `ts`, aren't so much buggy as simply built on older technology and more limited on features, which gives tokideli a clear edge without that being a matter of a "bug." Others still, like rom1v's `delay`, come down not to simple superiority but to a difference in the performance the use case demands. And `asciinema` isn't a competitor at all, but something to aim for interoperability with in the future.
