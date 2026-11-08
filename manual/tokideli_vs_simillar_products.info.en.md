@@ -22,13 +22,13 @@ Set `pv`'s transfer rate to 1 byte per second, feed it a single byte, send one m
 
 ```sh
 # Result on Linux
-$ (echo -n ^ | pv -qL 1; echo -n '$') | claude_sandbox/tokideli/bin/charts -z3d
+$ (echo -n ^ | pv -qL 1; echo -n '$') | charts -z3d
 0.908 0.908 ^
 1.905 0.997 $
 $ 
 
 # Result on a non-Linux environment (FreeBSD)
-$ (echo -n ^ | pv -qL 1; echo -n '$') | claude_sandbox/tokideli/bin/charts -z3d
+$ (echo -n ^ | pv -qL 1; echo -n '$') | charts -z3d
 0.949 0.949 ^
 0.950 0.000 $
 $ 

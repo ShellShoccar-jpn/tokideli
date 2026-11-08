@@ -22,13 +22,13 @@ tokideliの各コマンドの中には、既存の有名なコマンドと類似
 
 ```sh
 # Linux環境での実行結果
-$ (echo -n ^ | pv -qL 1; echo -n '$') | claude_sandbox/tokideli/bin/charts -z3d
+$ (echo -n ^ | pv -qL 1; echo -n '$') | charts -z3d
 0.908 0.908 ^
 1.905 0.997 $
 $ 
 
 # Linux以外の環境（FreeBSD）での実行結果
-$ (echo -n ^ | pv -qL 1; echo -n '$') | claude_sandbox/tokideli/bin/charts -z3d
+$ (echo -n ^ | pv -qL 1; echo -n '$') | charts -z3d
 0.949 0.949 ^
 0.950 0.000 $
 $ 
