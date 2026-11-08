@@ -36,7 +36,7 @@ $
 
 This, too, has a cause visible in `pv`'s source code.
 
-#### Why It Takes About 0.9 Seconds Before Data Starts
+#### Why It Takes At Least 0.9 Seconds Before Data Transmission Starts
 
 As already noted, `pv` only replenishes its sendable quota once every 100 milliseconds. In the example above, the configured rate is 1 byte per second, so the quota grows by 0.1 bytes each tick — including one right at startup. But since that's still under 1 byte, nothing can be sent yet. The quota keeps climbing: 0.2 after 100ms, 0.3 after 200ms, and so on, until it reaches 1.0 byte at the 900ms mark — and that's the instant the byte finally goes out.
 
@@ -72,7 +72,7 @@ The reason becomes clear once you dig into `pv`'s source code. In short, it keep
 
 * In producing the configured transfer rate, `pv` keeps its output interval fixed (100ms) and adjusts the amount of data sent, whereas `valve` keeps the amount sent fixed at 1 byte (or 1 line) and adjusts the length of the interval (how long it calls `nanosleep()` for).
 * On each loop cycle, `valve` determines the next scheduled send time by adding a fixed interval length — derived from the configured rate — onto the previous scheduled send time, then, right before calling `nanosleep()`, reads the current time and computes how long to sleep as the gap to that target. Once it wakes up, it reads the current time again and computes the gap against the target as the "oversleep time." Twice that oversleep time (the factor is `RECOVMAX_MULTIPLIER` in `valve.c`) is then recorded as the "maximum oversleep considered recoverable" (`tsRecovmax`). If a later cycle's oversleep time ever exceeds the current `tsRecovmax`, twice that new oversleep time becomes the new `tsRecovmax`.
-* There are two distinct reasons the time a send actually starts can drift from its scheduled time: one is unpredictable code execution time (plain oversleeping), and the other is the read-side blocking caused by data arriving intermittently. If the former is the cause, it makes sense to shave time off the next cycle's sleep to catch up; if the latter is the cause, it doesn't. `tsRecovmax` is what `valve` uses to tell the two apart — if the gap is within `tsRecovmax`, it adjusts; if it exceeds `tsRecovmax`, it doesn't.
+* There are two main reasons the time a send actually starts can drift from its scheduled time: one is unpredictable code execution time (plain oversleeping), and the other is the read-side blocking caused by data arriving intermittently. If the former is the cause, it makes sense to shave time off the next cycle's sleep to catch up; if the latter is the cause, it doesn't. `tsRecovmax` is what `valve` uses to tell the two apart — if the gap is within `tsRecovmax`, it adjusts; if it exceeds `tsRecovmax`, it doesn't.
 
 Thanks to this algorithm, `valve` never bursts on data with gaps clearly longer than a typical `nanosleep()` oversleep. Conversely, it can still produce a vanishingly small burst on the order of a typical oversleep — if you want to suppress even that, the `-s` option does so. The trade-off is that it then can never catch up on lost time, so some transfer-rate error creeps in; on some platforms, the `-p` option can offset that by nudging the process scheduler to shorten the oversleep itself, keeping the error small. These considerations are, we think, another point in `valve`'s favor.
 
