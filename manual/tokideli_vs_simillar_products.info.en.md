@@ -64,7 +64,7 @@ Run this, and you'll see the first 50 bytes (5 lines) of the second chunk come o
 
 #### The Troublesome Reason pv Bursts
 
-The reason becomes clear once you dig into `pv`'s source code. In short, it keeps track of how many bytes it's currently allowed to send (presumably built around the idea of an *average* transfer rate), and this value keeps climbing while nothing is being output. Left completely unbounded, though, it would let bursts grow without limit. There does seem to be some awareness of this on `pv`'s side — the accumulated value is capped so it never exceeds the configured rate times 5 seconds (`RATE_BURST_WINDOW`, in `pv-internal.h`). Some amount of accumulation is necessary to actually honor the configured rate, but too much accumulation is exactly what causes a burst.
+The reason becomes clear once you dig into `pv`'s source code. In short, it keeps track of how many bytes it's currently allowed to send (presumably built around the idea of an *average* transfer rate), and this value keeps climbing while nothing is being output. Left completely unbounded, though, it would let bursts grow without limit. There does seem to be some awareness of this on `pv`'s side — the accumulated value is capped so it never exceeds the configured rate times 5 seconds (`RATE_BURST_WINDOW`, in `pv-internal.h`). Some amount of accumulation is necessary to actually honor the configured rate, but too much accumulation is exactly what causes a burst — an inherent trade-off.
 
 #### How valve Solves This
 
@@ -80,7 +80,7 @@ Thanks to this algorithm, `valve` never bursts on data with gaps clearly longer 
 
 `pv -L` treats the input purely as a byte stream and limits the transfer rate in byte-sized units. That makes sense for reproducing — or sending data over — the behavior of a typical communication link whose maximum rate is set in bit-sized units (i.e., 1/8-byte units). But in computing contexts (Unix-like systems especially), it's often the line, not the byte, that you actually want to rate-limit.
 
-Text data organized one record per line is common — log data is one example, and the more recent "JSON Lines" format, which packs individual JSON values one per line, is another. Since the data is already organized by line, it's natural to want to process it at a steady rate measured in lines too. But data like this has lines of variable byte length, so even a command like `pv -L` that lets you set a byte-based rate still ends up with uneven line intervals. `valve`'s `-l` option, by contrast, lets you make each line's output come out at a steady interval.
+Text data organized one record per line is common — log data is one example, and the more recent "[JSON Lines](https://jsonlines.org/)" and "[NDJSON](https://ndjson.com/)" formats, which pack individual JSON values one per line, are another. Since the data is already organized by line, it's natural to want to process it at a steady rate measured in lines too. But data like this has lines of variable byte length, so even a command like `pv -L` that lets you set a byte-based rate still ends up with uneven line intervals. `valve`'s `-l` option, by contrast, lets you make each line's output come out at a steady interval.
 
 Here's a simple example: say you want to download `file1.jpg` through `file100.jpg` from some website at 4-second intervals, out of consideration for server load. With `valve`, you can write it like this:
 
