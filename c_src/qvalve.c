@@ -2,8 +2,8 @@
 #
 # QVALVE - Quantitative Valve for the UNIX Pipeline
 #
-# USAGE   : qvalve [-c|-l] [-t] [-1] [-p n] quantity [file [...]]
-#           qvalve [-c|-l] [-t] [-1] [-p n] controlfile [file [...]]
+# USAGE   : qvalve [-c|-l] [-t] [-1] [-p n] [-k cmd] quantity [file [...]]
+#           qvalve [-c|-l] [-t] [-1] [-p n] [-k cmd] controlfile [file [...]]
 # Args    : quantity ...  * Quantity this command allows to pass through
 #                           in total.
 #                         * The quantity is the number of bytes (for the
@@ -66,6 +66,13 @@
 #                                     * It is the same behavior as
 #                                       the closing the controlfile.
 #                                       (See the -t option)
+#                                     * If the -k option is given, the
+#                                       data transfer is fully stopped
+#                                       first, and then the external
+#                                       command is run with
+#                                       QVALVE_EXEC_BY="t_command"
+#                                       before this command finally
+#                                       terminates. (See the -k option)
 #           controlfile . Filepath to specify the quantity instead of by
 #                         argument. You can change the parameter even when
 #                         this command is running by updating the content
@@ -120,6 +127,12 @@
 #                           behavior by giving the "t" command to the
 #                           controlfile instead. (See the quantity
 #                           section)
+#                         * If the -k option is given, the data transfer
+#                           is fully stopped first, and then the
+#                           external command is run with
+#                           QVALVE_EXEC_BY="controlfile_closed" before
+#                           this command finally terminates. (See the
+#                           -k option)
 #           -1 .......... * Output one character/line (LF) at first before
 #                           outputting the incoming data.
 #                         * This option might work as a starter of the
@@ -134,11 +147,47 @@
 #                           but if failed, it will try the smaller numbers.
 #                         * An administrative privilege might be required to
 #                           use this option.
+#           -k cmd ...... * Specify an external command (as one string,
+#                           e.g. -k 'notify-send done') to run via system(3)
+#                           every time the amount of data actually output
+#                           reaches the current target, when there is no
+#                           more input data, when this command is about
+#                           to terminate via the -t option, or when the
+#                           controlfile receives the "t" command.
+#                         * Since it is run by system(3), this command's
+#                           own data transfer blocks while it runs. This
+#                           is intentional.
+#                         * For "controlfile_closed"/"t_command" below,
+#                           the data transfer is always fully stopped
+#                           first, and only then is the external command
+#                           run; this command terminates only after the
+#                           external command finishes.
+#                         * The following environment variables are passed
+#                           to the external command.
+#                             QVALVE_EXEC_BY ... The reason it was invoked.
+#                               "totalsize_reached"  : The current target
+#                                 was reached (this can happen repeatedly
+#                                 if a controlfile raises the target again)
+#                               "end_of_data" ....... There is no more
+#                                 input data to read
+#                               "controlfile_closed" . The -t-option-enabled
+#                                 controlfile (a character-special file or
+#                                 named pipe) was closed
+#                               "t_command" ......... The controlfile
+#                                 received the "t" command
+#                             QVALVE_TOTAL_SIZE ... The total amount sent
+#                               through so far
+#                             QVALVE_SET_SIZE ..... The current target
+#                               amount
+#                             QVALVE_UNIT .......... "char" or "line",
+#                               according to the -c/-l option
+#                             QVALVE_PID ........... This command's own
+#                               process ID
 # Retuen  : Return 0 only when finished successfully
 #
 # How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -pthread
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-10-09
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-11-12
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -211,6 +260,9 @@ typedef struct timespec tmsp;
 typedef struct _thrcom_t {
   pthread_t       tMainth_id;       /* main thread ID                         */
   pthread_mutex_t mu;               /* The mutex variable                     */
+  pthread_mutex_t muKick;           /* Mutex to serialize fire_kick_hook()
+                                      * calls (it can be invoked concurrently
+                                      * from the main th. and the sub-th.)    */
   pthread_cond_t  co;               /* The condition variable                 */
   size_t          sizTarget;        /* The total quantity to be sent through
                                       * (updated by an absolute or additive
@@ -221,27 +273,37 @@ typedef struct _thrcom_t {
                                       * "sizTarget," once it catches up with
                                       * "sizTarget")                          */
   int             iTerm_req;        /* Request flag to terminate this command */
+  char*           pszTermReason;    /* QVALVE_EXEC_BY value to report, set by
+                                      * the sub-th. just before it requests the
+                                      * main-th. to terminate (the "t" command,
+                                      * or "-t"+controlfile-closed); NULL means
+                                      * this termination was not requested by
+                                      * the sub-th. (e.g. an external
+                                      * SIGTERM/SIGINT), so no hook is run.   */
 } thcominfo_t;
 typedef struct _thrmain_t {
   pthread_t       tSubth_id;        /* sub thread ID                          */
   int             iMu_isready;      /* Set 1 when mu has been initialized     */
+  int             iMuKick_isready;  /* Set 1 when muKick has been initialized */
   int             iCo_isready;      /* Set 1 when co has been initialized     */
   FILE*           fpIn;             /* File handle for the current input file */
 } thmaininfo_t;
 
 /*--- prototype functions ------------------------------------------*/
 void* param_updater(void* pvArgs);
-void update_periodic_time_type_r(char* pszCtrlfile);
-void update_periodic_time_type_c(char* pszCtrlfile);
+void update_quantity_type_r(char* pszCtrlfile);
+void update_quantity_type_c(char* pszCtrlfile);
 int parse_quantity(char* pszArg, size_t* psiz);
 int change_to_rtprocess(int iPrio);
 int read_1line(FILE *fp);
+void fire_kick_hook(const char* pszReason, size_t sizConsumed, size_t sizTarget);
 void term_request(int iSig, siginfo_t *siInfo, void *pct);
 void do_nothing(int iSig, siginfo_t *siInfo, void *pct);
 #ifdef __ANDROID__
   void term_this_thread(int iSig, siginfo_t *siInfo, void *pct);
 #endif
 void mainth_destructor(void* pvMainth);
+void mainth_terminate(thmaininfo_t* pstMainth, int iRet);
 void subth_destructor(void *pvFd);
 
 /*--- global variables ---------------------------------------------*/
@@ -250,6 +312,8 @@ int      giOpt_t;         /* The "-t" option flag                            */
 struct stat gstCtrlfile;  /* stat for the control file                       */
 int      giRecovery;      /* 0:normal 1:Recovery mode                        */
 int      giVerbose;       /* speaks more verbosely by the greater number     */
+int      giUnit;          /* 0:character 1:line 2-:undefined                */
+char*    gpszKickcmd;     /* Command string of the "-k" option (NULL=disabled)*/
 thcominfo_t gstThCom;     /* Variables for threads communication             */
 
 /*=== Define the functions for printing usage and error ============*/
@@ -258,11 +322,11 @@ thcominfo_t gstThCom;     /* Variables for threads communication             */
 void print_usage_and_exit(void) {
   fprintf(stderr,
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
-    "USAGE   : %s [-c|-l] [-t] [-p n] quantity [file [...]]\n"
-    "          %s [-c|-l] [-t] [-p n] controlfile [file [...]]\n"
+    "USAGE   : %s [-c|-l] [-t] [-p n] [-k cmd] quantity [file [...]]\n"
+    "          %s [-c|-l] [-t] [-p n] [-k cmd] controlfile [file [...]]\n"
 #else
-    "USAGE   : %s [-c|-l] [-t] quantity [file [...]]\n"
-    "          %s [-c|-l] [-t] controlfile [file [...]]\n"
+    "USAGE   : %s [-c|-l] [-t] [-k cmd] quantity [file [...]]\n"
+    "          %s [-c|-l] [-t] [-k cmd] controlfile [file [...]]\n"
 #endif
     "Args    : quantity ...  * Quantity this command allows to pass through\n"
     "                          in total.\n"
@@ -326,6 +390,13 @@ void print_usage_and_exit(void) {
     "                                    * It is the same behavior as\n"
     "                                      the closing the controlfile.\n"
     "                                      (See the -t option)\n"
+    "                                    * If the -k option is given, the\n"
+    "                                      data transfer is fully stopped\n"
+    "                                      first, and then the external\n"
+    "                                      command is run with\n"
+    "                                      QVALVE_EXEC_BY=\"t_command\"\n"
+    "                                      before this command finally\n"
+    "                                      terminates. (See the -k option)\n"
     "          controlfile . Filepath to specify the quantity instead of by\n"
     "                        argument. You can change the parameter even when\n"
     "                        this command is running by updating the content\n"
@@ -380,6 +451,12 @@ void print_usage_and_exit(void) {
     "                          behavior by giving the \"t\" command to the\n"
     "                          controlfile instead. (See the quantity\n"
     "                          section)\n"
+    "                        * If the -k option is given, the data\n"
+    "                          transfer is fully stopped first, and then\n"
+    "                          the external command is run with\n"
+    "                          QVALVE_EXEC_BY=\"controlfile_closed\" before\n"
+    "                          this command finally terminates. (See the\n"
+    "                          -k option)\n"
     "          -1 .......... * Output one character/line (LF) at first before\n"
     "                          outputting the incoming data.\n"
     "                        * This option might work as a starter of the\n"
@@ -396,10 +473,49 @@ void print_usage_and_exit(void) {
     "                        * An administrative privilege might be required to\n"
     "                          use this option.\n"
 #endif
+    "          -k cmd ...... * Specify an external command (as one string,\n"
+    "                          e.g. -k 'notify-send done') to run via\n"
+    "                          system(3) every time the amount of data\n"
+    "                          actually output reaches the current target,\n"
+    "                          when there is no more input data, when\n"
+    "                          this command is about to terminate via the\n"
+    "                          -t option, or when the controlfile receives\n"
+    "                          the \"t\" command.\n"
+    "                        * Since it is run by system(3), this command's\n"
+    "                          own data transfer blocks while it runs. This\n"
+    "                          is intentional.\n"
+    "                        * For \"controlfile_closed\"/\"t_command\" below,\n"
+    "                          the data transfer is always fully stopped\n"
+    "                          first, and only then is the external\n"
+    "                          command run; this command terminates only\n"
+    "                          after the external command finishes.\n"
+    "                        * The following environment variables are\n"
+    "                          passed to the external command.\n"
+    "                            QVALVE_EXEC_BY ... The reason it was\n"
+    "                              invoked.\n"
+    "                              \"totalsize_reached\"  : The current\n"
+    "                                target was reached (this can happen\n"
+    "                                repeatedly if a controlfile raises\n"
+    "                                the target again)\n"
+    "                              \"end_of_data\" ....... There is no more\n"
+    "                                input data to read\n"
+    "                              \"controlfile_closed\" . The -t-option-\n"
+    "                                enabled controlfile (a character-\n"
+    "                                special file or named pipe) was closed\n"
+    "                              \"t_command\" ......... The controlfile\n"
+    "                                received the \"t\" command\n"
+    "                            QVALVE_TOTAL_SIZE ... The total amount\n"
+    "                              sent through so far\n"
+    "                            QVALVE_SET_SIZE ..... The current target\n"
+    "                              amount\n"
+    "                            QVALVE_UNIT .......... \"char\" or \"line\",\n"
+    "                              according to the -c/-l option\n"
+    "                            QVALVE_PID ........... This command's own\n"
+    "                              process ID\n"
     "Retuen  : Return 0 only when finished successfully\n"
     "Package      : tokideli\n"
     "Version      : 1.2.0\n"
-    "Last Updated : 2026-10-09 16:06:06 JST\n"
+    "Last Updated : 2026-11-12 10:45:27 JST\n"
     "               (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -442,7 +558,6 @@ int main(int argc, char *argv[]) {
 /*--- Variables ----------------------------------------------------*/
 struct sigaction sa;      /* for signal handler definition (action) */
 sigset_t ssMask;          /* blocking signal list for the main thread*/
-int      iUnit;           /* 0:character 1:line 2-:undefined        */
 int      iOpt_1;          /* -1 option flag (default 0)             */
 int      iPrio;           /* -p option number (default 1)           */
 int      iRet;            /* return code                            */
@@ -452,6 +567,8 @@ char    *pszFilename;     /* filepath (for message)                 */
 int      iFileno;         /* file# of filepath                      */
 int      iFd;             /* file descriptor                        */
 size_t   siz;             /* all-purpose size_t                     */
+size_t   sizKickConsumed; /* Snapshot of sizConsumed for the "-k" hook*/
+size_t   sizKickTarget;   /* Snapshot of sizTarget for the "-k" hook */
 int      i, j;            /* all-purpose int                        */
 thmaininfo_t stMainth;    /* Variables required in handler functions*/
 
@@ -473,24 +590,26 @@ setlocale(LC_CTYPE, "");
 /*=== Parse arguments ==============================================*/
 
 /*--- Set default parameters of the arguments ----------------------*/
-iUnit     =0;
-iOpt_1    =0;
-iPrio     =1;
-giOpt_t   =0;
-giVerbose =0;
-giRecovery=1;
+giUnit     =0;
+iOpt_1     =0;
+iPrio      =1;
+giOpt_t    =0;
+giVerbose  =0;
+giRecovery =1;
+gpszKickcmd=NULL;
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "cl1tp:vh")) != -1) {
+while ((i=getopt(argc, argv, "cl1tp:k:vh")) != -1) {
   switch (i) {
-    case 'c': iUnit   = 0;    break;
-    case 'l': iUnit   = 1;    break;
-    case '1': iOpt_1  = 1;    break;
-    case 't': giOpt_t = 1;    break;
+    case 'c': giUnit = 0;            break;
+    case 'l': giUnit = 1;            break;
+    case '1': iOpt_1 = 1;            break;
+    case 't': giOpt_t = 1;           break;
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
     case 'p': if (sscanf(optarg,"%d",&iPrio) != 1) {print_usage_and_exit();}
               break;
 #endif
-    case 'v': giVerbose++;    break;
+    case 'k': gpszKickcmd = optarg;  break;
+    case 'v': giVerbose++;           break;
     case 'h': print_usage_and_exit();
     default : print_usage_and_exit();
   }
@@ -503,7 +622,12 @@ if (argc < 2) {print_usage_and_exit();}
 memset(&gstThCom, 0, sizeof(gstThCom    ));
 memset(&stMainth, 0, sizeof(thmaininfo_t));
 pthread_cleanup_push(mainth_destructor, &stMainth);
-/*--- Parse the periodic time --------------------------------------*/
+/*--- Prepare the mutex for the "-k" hook (always, regardless of   *
+ *     whether a controlfile is used)                           ---*/
+i = pthread_mutex_init(&gstThCom.muKick, NULL);
+if (i) {error_exit(i,"pthread_mutex_init() for muKick in main(): %s\n",strerror(i));}
+stMainth.iMuKick_isready = 1;
+/*--- Parse the quantity --------------------------------------------*/
 i = parse_quantity(argv[0], &siz);
 if (i <= 0) {
   /* Set the initial parameter, the Quantity is zero. */
@@ -565,7 +689,7 @@ argc--;
 argv++;
 
 /*=== Switch buffer mode ===========================================*/
-switch (iUnit) {
+switch (giUnit) {
   case 0:
             if (setvbuf(stdout,NULL,_IONBF,0)!=0) {
               error_exit(255,"Failed to switch to unbuffered mode\n");
@@ -618,7 +742,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
   }
 
   /*--- Reading and writing loop -----------------------------------*/
-  switch (iUnit) {
+  switch (giUnit) {
     case 0:
               errno = 0;
               while ((i=getc(stMainth.fpIn)) != EOF) {
@@ -626,6 +750,23 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                   error_exit(j,
                              "pthread_mutex_lock() in main() #1: %s\n",
                              strerror(j)                               );
+                }
+                if (gstThCom.sizTarget<=gstThCom.sizConsumed
+                    && gstThCom.iTerm_req==0
+                    && gpszKickcmd!=NULL                      ) {
+                  sizKickConsumed = gstThCom.sizConsumed;
+                  sizKickTarget   = gstThCom.sizTarget;
+                  if ((j=pthread_mutex_unlock(&gstThCom.mu))            != 0) {
+                    error_exit(j,
+                               "pthread_mutex_unlock() in main() #1: %s\n",
+                               strerror(j)                                 );
+                  }
+                  fire_kick_hook("totalsize_reached",sizKickConsumed,sizKickTarget);
+                  if ((j=pthread_mutex_lock(&gstThCom.mu))                != 0) {
+                    error_exit(j,
+                               "pthread_mutex_lock() in main() #1: %s\n",
+                               strerror(j)                               );
+                  }
                 }
                 while (gstThCom.sizTarget<=gstThCom.sizConsumed
                        && gstThCom.iTerm_req==0                ) {
@@ -644,14 +785,14 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                strerror(j)                              );
                   }
                 }
-                gstThCom.sizConsumed++;
+                if (gstThCom.iTerm_req==0) {gstThCom.sizConsumed++;}
                 if ((j=pthread_mutex_unlock(&gstThCom.mu))              != 0) {
                   error_exit(j,
                              "pthread_mutex_unlock() in main() #1: %s\n",
                              strerror(j)                                 );
                 }
-                if (gstThCom.iTerm_req) {mainth_destructor(&stMainth);
-                                         return(iRet);                }
+                if (gstThCom.iTerm_req) {mainth_terminate(&stMainth, iRet);
+                                         return(iRet);                 }
                 while (putchar(i)==EOF) {
                   error_exit(errno,
                              "putchar() in main() #1: %s\n",
@@ -659,7 +800,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                 }
               }
               if (ferror(stMainth.fpIn) && errno==EINTR) {
-                mainth_destructor(&stMainth);
+                mainth_terminate(&stMainth, iRet);
                 return(iRet);
               }
               break;
@@ -670,6 +811,23 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                   error_exit(j,
                              "pthread_mutex_lock() in main() #2: %s\n",
                              strerror(j)                               );
+                }
+                if (gstThCom.sizTarget<=gstThCom.sizConsumed
+                    && gstThCom.iTerm_req==0
+                    && gpszKickcmd!=NULL                      ) {
+                  sizKickConsumed = gstThCom.sizConsumed;
+                  sizKickTarget   = gstThCom.sizTarget;
+                  if ((j=pthread_mutex_unlock(&gstThCom.mu))            != 0) {
+                    error_exit(j,
+                               "pthread_mutex_unlock() in main() #2: %s\n",
+                               strerror(j)                                 );
+                  }
+                  fire_kick_hook("totalsize_reached",sizKickConsumed,sizKickTarget);
+                  if ((j=pthread_mutex_lock(&gstThCom.mu))                != 0) {
+                    error_exit(j,
+                               "pthread_mutex_lock() in main() #2: %s\n",
+                               strerror(j)                               );
+                  }
                 }
                 while (gstThCom.sizTarget<=gstThCom.sizConsumed
                        && gstThCom.iTerm_req==0                ) {
@@ -688,14 +846,14 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                strerror(j)                              );
                   }
                 }
-                gstThCom.sizConsumed++;
+                if (gstThCom.iTerm_req==0) {gstThCom.sizConsumed++;}
                 if ((j=pthread_mutex_unlock(&gstThCom.mu))              != 0) {
                   error_exit(j,
                              "pthread_mutex_unlock() in main() #2: %s\n",
                              strerror(j)                                 );
                 }
-                if (gstThCom.iTerm_req) {mainth_destructor(&stMainth);
-                                         return(iRet);                }
+                if (gstThCom.iTerm_req) {mainth_terminate(&stMainth, iRet);
+                                         return(iRet);                 }
                 while (putchar(i)==EOF) {
                   error_exit(errno,
                              "putchar() in main() #2: %s\n",
@@ -704,7 +862,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                 if (read_1line(stMainth.fpIn) != 0) {break;}
               }
               if (ferror(stMainth.fpIn) && errno==EINTR) {
-                mainth_destructor(&stMainth);
+                mainth_terminate(&stMainth, iRet);
                 return(iRet);
               }
               break;
@@ -718,6 +876,19 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
   /*--- End loop ---------------------------------------------------*/
   if (pszPath == NULL) {break;}
   iFileno++;
+}
+
+/*=== Fire the "-k" hook for the "end_of_data" event ================*/
+if (gpszKickcmd != NULL) {
+  if ((j=pthread_mutex_lock(  &gstThCom.mu)) != 0) {
+    error_exit(j,"pthread_mutex_lock() in main() #3: %s\n"  , strerror(j));
+  }
+  sizKickConsumed = gstThCom.sizConsumed;
+  sizKickTarget   = gstThCom.sizTarget;
+  if ((j=pthread_mutex_unlock(&gstThCom.mu)) != 0) {
+    error_exit(j,"pthread_mutex_unlock() in main() #3: %s\n", strerror(j));
+  }
+  fire_kick_hook("end_of_data", sizKickConsumed, sizKickTarget);
 }
 
 /*=== Finish normally ==============================================*/
@@ -762,10 +933,10 @@ if (sigaction(SIGTERM,&sa,NULL) != 0) {
 #endif
 
 /*=== The routine when the control file is a regular file ==========*/
-if (gstCtrlfile.st_mode & S_IFREG) {update_periodic_time_type_r(pszCtrlfile);}
+if (gstCtrlfile.st_mode & S_IFREG) {update_quantity_type_r(pszCtrlfile);}
 
 /*=== The routine when the control file is a character special file */
-else                               {update_periodic_time_type_c(pszCtrlfile);}
+else                               {update_quantity_type_c(pszCtrlfile);}
 
 /*=== End of the subthread (does not come here) ====================*/
 return NULL;}
@@ -777,14 +948,14 @@ return NULL;}
 ####################################################################*/
 
 /*=== Try to update the parameter for a regular file =================
- * [in]  pszCtrlfile      : Filename of the control file which the periodic
- *                          time is written
+ * [in]  pszCtrlfile      : Filename of the control file into which the new
+ *                          quantity command is written
  *       gstThCom.tMainth_id
  *                        : The main thread ID
  *       gstThCom.mu      : Mutex object to lock
  *       gstThCom.co      : Condition variable to send a signal to the sub-th
  * [out] gstThCom.sizTarget: the new target quantity                */
-void update_periodic_time_type_r(char* pszCtrlfile) {
+void update_quantity_type_r(char* pszCtrlfile) {
 
   /*--- Variables --------------------------------------------------*/
   struct sigaction sa;        /* for signal handler definition (action)   */
@@ -804,6 +975,9 @@ void update_periodic_time_type_r(char* pszCtrlfile) {
   sa.sa_sigaction = do_nothing;
   sa.sa_flags     = SA_SIGINFO | SA_RESTART;
   if (sigaction(SIGALRM,&sa,NULL) != 0) {
+    error_exit(errno,"sigaction() in type_r(): %s\n",strerror(errno));
+  }
+  if (sigaction(SIGHUP ,&sa,NULL) != 0) {
     error_exit(errno,"sigaction() in type_r(): %s\n",strerror(errno));
   }
   /* 2) Unblock the signals (SIGHUP and SIGALRM) */
@@ -861,24 +1035,38 @@ pause:
     pause();
   }
 
-  /*--- Request the main-th. to terminate this command -------------*/
+  /*--- Request the main-th. to terminate, reporting "t_command" as   *
+   *     the reason for the "-k" hook ----------------------------------*/
+  if ((k=pthread_mutex_lock(&gstThCom.mu)) != 0) {
+    error_exit(k,"pthread_mutex_lock() in type_r(): %s\n"  , strerror(k));
+  }
+  gstThCom.pszTermReason = "t_command";
+  gstThCom.iTerm_req      = 1;
+  if ((k=pthread_cond_signal( &gstThCom.co)) != 0) {
+    error_exit(k,"pthread_cond_signal() in type_r(): %s\n" , strerror(k));
+  }
+  if ((k=pthread_mutex_unlock(&gstThCom.mu)) != 0) {
+    error_exit(k,"pthread_mutex_unlock() in type_r(): %s\n", strerror(k));
+  }
   if (pthread_kill(gstThCom.tMainth_id, SIGTERM) != 0) {
     error_exit(errno,"pthread_kill() in type_r(): %s\n",strerror(errno));
   }
 
-  /*--- End of the function (does not come here) -------------------*/
+  /*--- End of the function (does not come here; the main-th. will    *
+   *     cancel this sub-th. once it has stopped, running the "-k"    *
+   *     hook itself first if needed) ----------------------------------*/
   pthread_cleanup_pop(0);
 }
 
 /*=== Try to update the parameter for a char-sp/FIFO file ============
- * [in]  pszCtrlfile      : Filename of the control file which the periodic
- *                          time is written
+ * [in]  pszCtrlfile      : Filename of the control file into which the new
+ *                          quantity command is written
  *       gstThCom.tMainth_id
  *                        : The main thread ID
  *       gstThCom.mu      : Mutex object to lock
  *       gstThCom.co      : Condition variable to send a signal to the sub-th
  * [out] gstThCom.sizTarget: the new target quantity                  */
-void update_periodic_time_type_c(char* pszCtrlfile) {
+void update_quantity_type_c(char* pszCtrlfile) {
 
   /*--- Variables --------------------------------------------------*/
   int     iFd_ctrlfile             ; /* file desc. of the ctrlfile  */
@@ -891,6 +1079,7 @@ void update_periodic_time_type_c(char* pszCtrlfile) {
   struct pollfd fdsPoll[1]         ;
   char*   psz                      ;
   size_t  siz                      ;
+  char*   pszTermReason            ; /* QVALVE_EXEC_BY value to report    */
   int     i, j                     ;
 
   /*--- Initialize the buffer for the parameter --------------------*/
@@ -932,6 +1121,7 @@ void update_periodic_time_type_c(char* pszCtrlfile) {
       if (giVerbose>0) {
         warning("%s: Controlfile closed. Terminate myself.\n", pszCtrlfile);
       }
+      pszTermReason = "controlfile_closed";
       break;
     }
     if (giVerbose>0) {
@@ -999,8 +1189,8 @@ void update_periodic_time_type_c(char* pszCtrlfile) {
     }
     memcpy(szCmdbuf, szBuf1+j, i-j);
     i = parse_quantity(szCmdbuf, &siz);
-    if (i< 0) {szCmdbuf[0]='\0'; continue;} /* Invalid periodic time */
-    if (i==0) {                  break   ;} /* Request to terminate  */
+    if (i< 0) {szCmdbuf[0]='\0'; continue;} /* Invalid quantity */
+    if (i==0) {pszTermReason="t_command"; break;} /* Request to terminate */
     if ((j=pthread_mutex_lock(  &gstThCom.mu)) != 0) {
       error_exit(j,"pthread_mutex_lock() in type_c(): %s\n"  , strerror(j));
     }
@@ -1049,12 +1239,24 @@ void update_periodic_time_type_c(char* pszCtrlfile) {
   /*--- End of the infinite loop -----------------------------------*/
   }
 
-  /*--- Request the main-th. to terminate this command -------------*/
+  /*--- Request the main-th. to terminate, reporting the termination  *
+   *     reason for the "-k" hook --------------------------------------*/
+  if ((j=pthread_mutex_lock(  &gstThCom.mu)) != 0) {
+    error_exit(j,"pthread_mutex_lock() in type_c(): %s\n"  , strerror(j));
+  }
+  gstThCom.pszTermReason = pszTermReason;
+  gstThCom.iTerm_req      = 1;
+  if ((j=pthread_cond_signal( &gstThCom.co)) != 0) {
+    error_exit(j,"pthread_cond_signal() in type_c(): %s\n" , strerror(j));
+  }
+  if ((j=pthread_mutex_unlock(&gstThCom.mu)) != 0) {
+    error_exit(j,"pthread_mutex_unlock() in type_c(): %s\n", strerror(j));
+  }
   if (pthread_kill(gstThCom.tMainth_id, SIGTERM) != 0) {
     error_exit(errno,"pthread_kill() in type_c(): %s\n",strerror(errno));
   }
 
-  /*--- End of the function (does not come here) -------------------*/
+  /*--- End of the function (does not come here) ----------------------*/
   pthread_cleanup_pop(0);
 }
 
@@ -1152,6 +1354,90 @@ int parse_quantity(char* pszArg, size_t* psiz) {
     if (sizNum > SIZE_MAX/ui8Scale) {*psiz=SIZE_MAX       ; return 1+iAddition;}
     else                            {*psiz=sizNum*ui8Scale; return 1+iAddition;}
   }
+}
+
+/*=== Run the external command specified by the "-k" option ==========
+ * [in]  pszReason   : Value to set to the QVALVE_EXEC_BY env var
+ *                      ("totalsize_reached"/"end_of_data"/
+ *                       "controlfile_closed"/"t_command")
+ *       sizConsumed : Value to set to the QVALVE_TOTAL_SIZE env var
+ *       sizTarget   : Value to set to the QVALVE_SET_SIZE env var
+ *       gpszKickcmd : The command line string given after "-k" (this
+ *                     function does nothing if NULL, i.e. "-k" was
+ *                     not given)
+ *       giUnit      : Used to set the QVALVE_UNIT env var
+ *                     ("char" for 0, "line" for 1)
+ * [out] (sets the QVALVE_PID env var to this process's own PID, via
+ *        getpid(), so the external command can reliably find it even
+ *        if the command itself detaches a grandchild process)
+ * [note] - This function blocks the calling thread for as long as the
+ *           external command runs (via system()); this is intentional.
+ *         - All four reasons are fired by the main-th. itself: for
+ *           "controlfile_closed"/"t_command," the sub-th. only sets
+ *           gstThCom.pszTermReason and requests termination; it is the
+ *           main-th. (in mainth_terminate()) that actually calls this
+ *           function, right after it has fully stopped transferring,
+ *           so "sizConsumed"/"sizTarget" are already the final values
+ *           at that point. Since every caller is the main-th., the
+ *           gstThCom.muKick lock below no longer serializes against a
+ *           concurrent caller in practice, but it is kept as a cheap
+ *           safety net.                                              */
+void fire_kick_hook(const char* pszReason, size_t sizConsumed, size_t sizTarget) {
+
+  /*--- Variables --------------------------------------------------*/
+  char szBufConsumed[32];
+  char szBufTarget[32];
+  char szBufPid[32];
+  int  i, iRet;
+
+  /*--- Do nothing if "-k" was not given -----------------------------*/
+  if (gpszKickcmd == NULL) {return;}
+
+  /*--- Serialize against the other thread ---------------------------*/
+  if ((i=pthread_mutex_lock(&gstThCom.muKick)) != 0) {
+    error_exit(i,"pthread_mutex_lock() in fire_kick_hook(): %s\n",strerror(i));
+  }
+
+  /*--- Set the environment variables for the command -----------------*/
+  if (snprintf(szBufConsumed,sizeof(szBufConsumed),"%zu",sizConsumed) < 0) {
+    error_exit(errno,"snprintf() in fire_kick_hook() #1: %s\n",strerror(errno));
+  }
+  if (snprintf(szBufTarget  ,sizeof(szBufTarget  ),"%zu",sizTarget  ) < 0) {
+    error_exit(errno,"snprintf() in fire_kick_hook() #2: %s\n",strerror(errno));
+  }
+  if (setenv("QVALVE_EXEC_BY"   ,pszReason                      ,1) != 0) {
+    error_exit(errno,"setenv() in fire_kick_hook() #1: %s\n",strerror(errno));
+  }
+  if (setenv("QVALVE_TOTAL_SIZE",szBufConsumed                  ,1) != 0) {
+    error_exit(errno,"setenv() in fire_kick_hook() #2: %s\n",strerror(errno));
+  }
+  if (setenv("QVALVE_SET_SIZE"  ,szBufTarget                    ,1) != 0) {
+    error_exit(errno,"setenv() in fire_kick_hook() #3: %s\n",strerror(errno));
+  }
+  if (setenv("QVALVE_UNIT"      ,giUnit==0 ? "char" : "line"    ,1) != 0) {
+    error_exit(errno,"setenv() in fire_kick_hook() #4: %s\n",strerror(errno));
+  }
+  if (snprintf(szBufPid,sizeof(szBufPid),"%ld",(long)getpid()) < 0) {
+    error_exit(errno,"snprintf() in fire_kick_hook() #3: %s\n",strerror(errno));
+  }
+  if (setenv("QVALVE_PID"       ,szBufPid                       ,1) != 0) {
+    error_exit(errno,"setenv() in fire_kick_hook() #5: %s\n",strerror(errno));
+  }
+
+  /*--- Run it (qvalve blocks here; this is intentional) ---------------*/
+  errno = 0;
+  iRet  = system(gpszKickcmd);
+  if      (iRet == -1) {
+    warning("\"-k\" command could not be run: %s\n",strerror(errno));
+  } else if (iRet != 0) {
+    warning("\"-k\" command \"%s\" finished with a non-zero status\n",gpszKickcmd);
+  }
+
+  /*--- Unlock and return -----------------------------------------------*/
+  if ((i=pthread_mutex_unlock(&gstThCom.muKick)) != 0) {
+    error_exit(i,"pthread_mutex_unlock() in fire_kick_hook(): %s\n",strerror(i));
+  }
+  return;
 }
 
 /*=== Try to make me a realtime process ==============================
@@ -1318,6 +1604,10 @@ void mainth_destructor(void* pvMainth) {
     if (giVerbose>0) {warning("Conditional variable is destroied\n");}
     pthread_cond_destroy( &gstThCom.co);pstMainth->iCo_isready=0;
   }
+  if (pstMainth->iMuKick_isready) {
+    if (giVerbose>0) {warning("Kick-hook mutex is destroied\n");}
+    pthread_mutex_destroy(&gstThCom.muKick);pstMainth->iMuKick_isready=0;
+  }
 
   /*--- Close files ------------------------------------------------*/
   if (pstMainth->fpIn != NULL) {
@@ -1327,6 +1617,50 @@ void mainth_destructor(void* pvMainth) {
 
   /*--- Finish -----------------------------------------------------*/
   return;
+}
+
+/*=== Terminate the main-th., running the "-k" hook first if the
+ *    sub-th. requested this termination =============================
+ * [in]  pstMainth  : The pointer of the structure of the main thread
+ *                     local variables
+ *       iRet       : The exit code this command should finish with
+ *       gstThCom.pszTermReason
+ *                  : Non-NULL (the QVALVE_EXEC_BY value) if the sub-th.
+ *                    (not an external signal) is the one that
+ *                    requested this termination (the "t" command, or
+ *                    "-t"+controlfile-closed); NULL otherwise (e.g. an
+ *                    external SIGTERM/SIGINT), in which case no hook
+ *                    is run.
+ * [note] Never returns.                                             */
+void mainth_terminate(thmaininfo_t* pstMainth, int iRet) {
+
+  /*--- Variables --------------------------------------------------*/
+  int    i;
+  char*  pszTermReason;
+  size_t sizKickConsumed, sizKickTarget;
+
+  /*--- Snapshot the reason and the final transfer amount, now that  *
+   *     this (main) th. has fully stopped transferring --------------*/
+  if ((i=pthread_mutex_lock(&gstThCom.mu)) != 0) {
+    error_exit(i,"pthread_mutex_lock() in mainth_terminate(): %s\n",strerror(i));
+  }
+  pszTermReason   = gstThCom.pszTermReason;
+  sizKickConsumed = gstThCom.sizConsumed;
+  sizKickTarget   = gstThCom.sizTarget;
+  if ((i=pthread_mutex_unlock(&gstThCom.mu)) != 0) {
+    error_exit(i,"pthread_mutex_unlock() in mainth_terminate(): %s\n",strerror(i));
+  }
+
+  /*--- Run the "-k" hook myself if the sub-th. requested this        *
+   *     termination for a known reason (fire_kick_hook() itself is   *
+   *     a no-op when "-k" was not given) ------------------------------*/
+  if (pszTermReason != NULL) {
+    fire_kick_hook(pszTermReason, sizKickConsumed, sizKickTarget);
+  }
+
+  /*--- Finish, cancelling the sub-th. as usual (its job is done) ----*/
+  mainth_destructor(pstMainth);
+  exit(iRet);
 }
 
 /*=== CLEANUPHANDLER : Release the sub-th. resources ===============*/

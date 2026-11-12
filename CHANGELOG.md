@@ -16,9 +16,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   additionally rebases the baseline `-d` uses for its elapsed-since-
   previous-line column, so the first line/character after a SIGUSR2
   reset always reports a `-d` delta of (effectively) zero.
+- `qvalve`: a new `-k` option that runs an external command (given as a
+  single string, run via `system(3)`) every time the amount of data
+  actually output reaches the current target, when there is no more
+  input data, when the controlfile receives the `t` command, or when
+  the command is about to terminate via `-t`. Since it runs via
+  `system(3)`, `qvalve`'s own data transfer blocks for as long as the
+  external command runs; this is intentional. For the latter two cases
+  (`controlfile_closed`/`t_command`), the data transfer is always fully
+  stopped before the external command runs, and `qvalve` itself
+  terminates only after the external command finishes. The command
+  receives `QVALVE_EXEC_BY` (`totalsize_reached`/`end_of_data`/
+  `controlfile_closed`/`t_command`), `QVALVE_TOTAL_SIZE`,
+  `QVALVE_SET_SIZE`, `QVALVE_UNIT` (`char`/`line`), and `QVALVE_PID`
+  (this command's own process ID) as environment variables.
 
 ### Fixed
 
+- `qvalve`: sending the process SIGHUP, while a regular file is used as
+  the controlfile, was documented to force an immediate re-read of it
+  (instead of waiting for the next periodic poll), but actually crashed
+  the command (SIGHUP's default disposition) because the sub-thread
+  that watches the controlfile unblocked SIGHUP for itself without ever
+  registering a handler for it. It now registers a (do-nothing) handler
+  for SIGHUP there too, matching the already-correct handling of
+  SIGALRM right next to it, so SIGHUP behaves as documented.
 - `relval`: the `-d` drain-file was opened without `O_APPEND`, so
   pointing it at a pre-existing file silently overwrote its contents
   from the beginning instead of appending, unlike every other command

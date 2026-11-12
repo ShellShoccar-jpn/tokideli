@@ -9,8 +9,8 @@ qvalve - Quantitative valve: outputs a specified amount of data at a specified t
 ## Synopsis
 
 ```sh:
-qvalve [-c|-l] [-t] [-1] [-p n] quantity [file [...]]
-qvalve [-c|-l] [-t] [-1] [-p n] controlfile [file [...]]
+qvalve [-c|-l] [-t] [-1] [-p n] [-k command] quantity [file [...]]
+qvalve [-c|-l] [-t] [-1] [-p n] [-k command] controlfile [file [...]]
 ```
 
 ## Description
@@ -64,6 +64,7 @@ Instead of an amount to output, you can specify a command instructing the behavi
 
 * `t`
   * Finishes the output and terminates the qvalve command.
+  * If the -k option is given, the data transfer is fully stopped first, and only then is the external command run (with `QVALVE_EXEC_BY=t_command`); this command terminates only after that external command finishes. See [Notes on the -k Hook](#notes-on-the--k-hook).
 
 ### controlfile
 
@@ -108,6 +109,10 @@ Outputs one line (LF) unrelated to the data from stdin at startup. The purpose o
 (Only on OSes supporting _POSIX_PRIORITY_SCHEDULING) Process priority setting. After sending the specified amount, this command enters a waiting state via the pthread_cond_wait() function, and is woken up by a pthread_cond_signal() once an amount of 1 or more is set from the controlfile. The higher the process priority, the shorter the wake-up latency is expected to be; setting *n* to 2 or 3 raises the process priority. *n* ranges over four levels from 0 to 3, and the default is 1.
 
 Note that this option may require administrator privileges in some environments.
+
+### -k *command*
+
+Specifies, as a single string, an external command (together with its arguments) to run via `system(3)` every time the amount of data actually output reaches the current target, when there is no more input data, when this command is about to terminate because of the -t option, or when the controlfile receives the "t" command. Since the command is run via `system(3)`, this command's own data transfer blocks for as long as the external command is running; this is intentional. For the latter two cases, the data transfer is always fully stopped first, and this command terminates only after the external command finishes. For details, including the environment variables passed to the external command, see [Notes on the -k Hook](#notes-on-the--k-hook).
 
 ## Return Value
 
@@ -224,6 +229,28 @@ $ echo '  +1k' > controlfile⏎ ← change the number of leading spaces
 ```
 
 If you include spaces or a decimal fraction, be careful that the length of the string, including the newline character, does not reach 64 or more. Strings of 64 characters or longer are ignored.
+
+### Notes on the -k Hook
+
+When the -k option is given, the command string you specified is run, as-is, via `system(3)` on each of the following four occasions. Because `system(3)` is synchronous, this command's own data transfer blocks for as long as the external command keeps running; this is intentional, so a slow or hanging `-k` command directly delays this command's data transfer (and, for `controlfile_closed`/`t_command` below, also delays the termination that would otherwise happen immediately). For those latter two occasions specifically, this command always stops its data transfer completely *before* running the external command, so `QVALVE_TOTAL_SIZE`/`QVALVE_SET_SIZE` (below) already reflect the final values, and this command itself terminates only after the external command finishes.
+
+* `QVALVE_EXEC_BY=totalsize_reached`
+  * The amount of data actually sent through has caught up with the current target. Since the target can be raised again via a controlfile, this can fire repeatedly over the lifetime of the command — including once right at startup, if you start this command with a controlfile whose target defaults to "0" (see [controlfile](#controlfile)), since the target is already "reached" (0 sent out of a target of 0) before any real data has flowed.
+* `QVALVE_EXEC_BY=end_of_data`
+  * There is no more input data to read. If you specified more than one *file*, this fires only once, after the last of them reaches EOF — not once per file.
+* `QVALVE_EXEC_BY=controlfile_closed`
+  * This fires only at the one specific termination trigger described in [Detailed Termination Conditions](#detailed-termination-conditions): the -t option is enabled, a controlfile is used, that controlfile is a character-special file or a named pipe, and it was closed. It does not fire when a controlfile of this type is closed while -t is *not* enabled (in that case, as described above, this command just waits for it to be reopened).
+* `QVALVE_EXEC_BY=t_command`
+  * The controlfile received the "`t`" command (see [Control Commands](#control-commands)). Unlike `controlfile_closed`, this fires regardless of whether the -t option is enabled.
+
+In addition to `QVALVE_EXEC_BY`, the following environment variables are passed to the external command:
+
+* `QVALVE_TOTAL_SIZE` — The total amount sent through so far (in bytes or lines, matching the -c/-l setting in effect).
+* `QVALVE_SET_SIZE` — The current target amount.
+* `QVALVE_UNIT` — `"char"` if the -c option is in effect (the default), or `"line"` if the -l option is in effect.
+* `QVALVE_PID` — This command's own process ID. (Note that the `-k` command's own direct process is always a child of this command, so `$PPID` in a shell, or `getppid()` in a C program, also gives you this same value — except that, unlike an environment variable, `$PPID`/`getppid()` no longer gives you this command's PID once a grandchild process detaches itself from its parent, e.g. via `&` or `nohup`. Also note that `$PPID` itself is not among the special parameters POSIX specifies for the shell, so portable scripts should prefer this environment variable, or the POSIX-specified `ps -o ppid= -p $$`, over relying on it.)
+
+Since `system(3)`'s child process inherits this command's own standard output as-is — the very same file descriptor this command is using to send its data through — anything the `-k` command itself writes to its standard output merges directly into the data stream being piped onward. Redirect the `-k` command's own output if you don't want that (e.g. `-k 'notify-send done >/dev/null 2>&1'`).
 
 ## Compliance with Standards
 
