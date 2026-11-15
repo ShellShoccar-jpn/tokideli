@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A new `examples/` directory, holding small example programs built on
+  top of tokideli's commands — not part of the project's own command
+  set, but demonstrations of what can be built with them. Starts with
+  `onesec_game.sh`, a `typeliner`/`linets`-based mini-game that tests
+  how accurately you can hit a key at 1-second intervals.
 - `linets`/`charts`: in `-z`/`-Z` mode, sending the process SIGUSR1 now
   rebases the elapsed-seconds origin (column 1) on the fly — to the
   signal's own arrival instant for `-z`, or to the next-arriving
