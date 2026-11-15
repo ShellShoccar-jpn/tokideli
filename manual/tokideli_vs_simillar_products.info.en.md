@@ -4,6 +4,17 @@
 
 Some of tokideli's commands have functionality similar to well-known existing commands. Because of that, we sometimes hear the complaint: "If that's what you want to do, just use the existing command 'X'. Why reinvent the wheel and multiply commands needlessly?" But the reason we built our own commands is that we had complaints about the existing ones — about their quality, their features, or outright defects we found in them. This document compares each tokideli command that has actually drawn that "reinvented wheel" criticism against the existing command with similar functionality, and lays out, command by command, why reinventing it was worthwhile.
 
+## Table of Contents
+
+- [`valve` vs pv's `-L` Option](#valve-vs-pvs--l-option)
+- [`delay` vs rom1v/delay](#delay-vs-rom1vdelay)
+- [`linets`/`charts` vs `ts` (moreutils)](#linetscharts-vs-ts-moreutils)
+- [`charts`/`linets`/`tscat` vs asciinema](#chartslinetstscat-vs-asciinema)
+- [`ptw` vs `unbuffer` (expect)](#ptw-vs-unbuffer-expect)
+- [`ptw` vs `pipetty` (colorized-logs)](#ptw-vs-pipetty-colorized-logs)
+- [`ptw` vs `script`](#ptw-vs-script)
+- [Summary](#summary)
+
 ## `valve` vs [pv](https://www.ivarch.com/programs/pv.shtml)'s `-L` Option
 
 If you want to limit a data transfer to a constant rate, the claim goes, there's no need to build a command like [valve(1)](valve.man.en.md) — just use the well-known [pv](https://www.ivarch.com/programs/pv.shtml) command's `-L` option. But we had complaints about `pv -L` on both the quality and the feature front.

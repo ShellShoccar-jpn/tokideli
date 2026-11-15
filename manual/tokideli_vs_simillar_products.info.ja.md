@@ -4,6 +4,17 @@
 
 tokideliの各コマンドの中には、既存の有名なコマンドと類似の機能を持つものがいくつかある。よって「それがやりたくば、既存のコマンド『○○』を使えばいい。なぜ車輪の再発明をしてコマンドを乱造するのか」という指摘を受けることもある。しかし、我々がコマンドを作った理由は、既存のそれらコマンドに対して、品質や機能、さらには欠陥が見受けられるという不満を抱いたからである。この文書では、実際に再発明だと指摘を受けたtokideliコマンドと、類似の機能をもつ既存コマンドを比較し、それぞれについて再発明した意義を記していく。
 
+## 目次
+
+- [`valve` vs pvの`-L`オプション](#valve-vs-pvの-lオプション)
+- [`delay` vs rom1v/delay](#delay-vs-rom1vdelay)
+- [`linets`/`charts` vs `ts`（moreutils）](#linetscharts-vs-tsmoreutils)
+- [`charts`/`linets`/`tscat` vs asciinema](#chartslinetstscat-vs-asciinema)
+- [`ptw` vs `unbuffer`（expect）](#ptw-vs-unbufferexpect)
+- [`ptw` vs `pipetty`（colorized-logs）](#ptw-vs-pipettycolorized-logs)
+- [`ptw` vs `script`](#ptw-vs-script)
+- [まとめ](#まとめ)
+
 ## `valve` vs [pv](https://www.ivarch.com/programs/pv.shtml)の`-L`オプション
 
 データ転送レートを一定に制限したいなら、[valve(1)](valve.man.ja.md)コマンドなど作らずとも、有名な[pv](https://www.ivarch.com/programs/pv.shtml)コマンドの`-L`オプションを使えばいいという指摘がある。しかし我々にとっては、品質面と機能面で不満があった。
