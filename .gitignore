@@ -1,14 +1,16 @@
 # Built files from "c_src/*.c"
-bin/getfilets
-bin/herewego
-bin/linets
-bin/oobleck
-bin/ptw
-bin/qvalve
-bin/relval
-bin/sleep
-bin/tscat
-bin/tshead
-bin/typeliner
-bin/valve
-manual.book
+bin/*
+
+# Scratch files, not part of any deliverable
+tmp/*
+
+# c_src/ only tracks the *.c sources and the build script (MAKE.sh);
+# everything else (compiled binaries left there by MAKE.sh's default
+# output directory, stray test artifacts, etc.) is ignored.
+c_src/*
+!c_src/*.c
+!c_src/MAKE.sh
+
+# CLAUDE.md (project-memory style guides) is always tracked, in every
+# directory, even ones whose other contents are otherwise ignored above.
+!**/CLAUDE.md
