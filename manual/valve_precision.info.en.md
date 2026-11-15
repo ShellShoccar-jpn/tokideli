@@ -17,9 +17,9 @@ All measurements were taken using the `-9 -d` options of the [linets(1)](linets.
 |---|---|
 | CPU | AMD Ryzen 7 7735HS with Radeon Graphics |
 | Logical cores | 16 |
-| Kernel | Linux 6.18.33.2-microsoft-standard-WSL2 (WSL2, PREEMPT_DYNAMIC) |
+| Kernel | Linux 6.18.58.1-microsoft-standard-WSL2 (WSL2, PREEMPT_DYNAMIC) |
 | valve build command | `cc -O3 -o valve valve.c -pthread -lrt` |
-| pv version | 1.11.0 (built in the same environment) |
+| pv version | 1.12.7 (built in the same environment) |
 
 WSL2 is a Linux kernel running inside a lightweight virtual machine on top of Windows, which adds an extra layer of scheduling abstraction from the host OS (Windows). Bear in mind that the error figures reported below may therefore be somewhat larger than what would be observed on a bare-metal Linux environment.
 
@@ -44,7 +44,7 @@ What matters here is that when `tsPrev` (the reference time) is updated after se
 
 #### pv: A Polling-Based, Discrete Token-Bucket Scheme
 
-Analyzing the pv 1.11.0 source code (`src/pv/loop.c`, `src/pv/transfer.c`), the `-L` rate limit is implemented as follows.
+Analyzing the pv 1.12.7 source code (`src/pv/loop.c`, `src/pv/transfer.c`), the `-L` rate limit is implemented as follows.
 
 ```c
 #define RATE_GRANULARITY 100000000  /* nsec between -L rate chunks */

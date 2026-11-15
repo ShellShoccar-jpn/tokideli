@@ -10,7 +10,7 @@ If you want to limit a data transfer to a constant rate, the claim goes, there's
 
 ### Quality Issue 1: Low-Quality Transfer-Rate Precision
 
-It comes down to one line: `pv -L`'s precision is simply too coarse and loose. Looking at pv 1.11.0's source code (`src/pv/loop.c`, `src/pv/transfer.c`), `-L` turns out to be a discrete token-bucket scheme that only replenishes its sendable quota once every 100 milliseconds, and even detecting that quota depends on `select()` polling with a fixed 90-millisecond timeout. These two coarse periods, which never synchronize with each other, beat against one another and produce jitter.
+It comes down to one line: `pv -L`'s precision is simply too coarse and loose. Looking at pv 1.12.7's source code (`src/pv/loop.c`, `src/pv/transfer.c`), `-L` turns out to be a discrete token-bucket scheme that only replenishes its sendable quota once every 100 milliseconds, and even detecting that quota depends on `select()` polling with a fixed 90-millisecond timeout. These two coarse periods, which never synchronize with each other, beat against one another and produce jitter.
 
 `valve`, on the other hand, checks the clock each time it sends a chunk, and computes the next scheduled send time by simply adding a fixed interval length — derived from the configured rate — onto the previous scheduled send time (a virtual baseline), then calls `nanosleep()` for however long remains until that target. This produces no jitter. And because the next target is pinned to the *previous target*, not to "now," the varying execution time of the surrounding processing from one cycle to the next never affects the schedule itself, so error never accumulates either.
 
@@ -23,8 +23,8 @@ Set `pv`'s transfer rate to 1 byte per second, feed it a single byte, send one m
 ```sh
 # Result on Linux
 $ (echo -n ^ | pv -qL 1; echo -n '$') | charts -z3d
-0.908 0.908 ^
-1.905 0.997 $
+0.904 0.904 ^
+1.910 1.006 $
 $ 
 
 # Result on a non-Linux environment (FreeBSD)
@@ -50,7 +50,7 @@ On non-Linux systems, by contrast, `pv` relays data in two separate steps using 
 
 When the data source alternates between flowing and stopping, `pv -L` dumps out a burst of data right after the flow resumes.
 
-Try the one-liner below, for instance. It sets `pv`'s transfer rate to 10 bytes per second and feeds it intermittent data: first 50 bytes, then a 10-second pause, then another 100 bytes. Since `pv` takes 5 seconds to output that first chunk, it ends up with 5 seconds of idle time between finishing that output and the next chunk arriving.
+Try the one-liner below, for instance. It sets `pv`'s transfer rate to 10 bytes per second and feeds it intermittent data: first 50 bytes, then a 10-second pause, then another 100 bytes.
 
 ```sh
 # pv bursts right when the flow resumes
@@ -60,11 +60,11 @@ $ (seq 100000001 100000005; sleep 10; seq 200000001 200000010) | pv -qL 10
 $ (seq 100000001 100000005; sleep 10; seq 200000001 200000010) | valve 80bps
 ```
 
-Run this, and you'll see the first 50 bytes (5 lines) of the second chunk come out all at once. That behavior is correct if you read it as honoring the "average" transfer rate — the reasoning being that since output was stalled for 5 seconds, it owes you 50 bytes' worth of catch-up, dumped all at once. But if that were really the reasoning, bumping the sleep to 11 seconds should burst out 60 bytes — yet no matter how long you make the sleep, the burst never exceeds 50 bytes, which doesn't add up. And regardless, if you've got some low-powered device with only a small buffer sitting downstream of the command, a burst like this can lose data outright — which is a real problem.
+Run this, and you'll see a burst of 60 bytes (6 lines) of the second chunk come out all at once, right after roughly 6 seconds of output having sat idle. That behavior is broadly plausible if you read it as honoring the "average" transfer rate — the reasoning being that since output was stalled for several seconds, it owes you that many seconds' worth of catch-up, dumped all at once. But if that were really the reasoning, stretching the pause to 20 seconds (idle output time of roughly 16 seconds) should burst out well over 100 bytes — yet doing exactly that, the burst still tops out at 60 bytes, which doesn't add up. And regardless, if you've got some low-powered device with only a small buffer sitting downstream of the command, a burst like this can lose data outright — which is a real problem.
 
 #### The Troublesome Reason pv Bursts
 
-The reason becomes clear once you dig into `pv`'s source code. In short, it keeps track of how many bytes it's currently allowed to send (presumably built around the idea of an *average* transfer rate), and this value keeps climbing while nothing is being output. Left completely unbounded, though, it would let bursts grow without limit. There does seem to be some awareness of this on `pv`'s side — the accumulated value is capped so it never exceeds the configured rate times 5 seconds (`RATE_BURST_WINDOW`, in `pv-internal.h`). Some amount of accumulation is necessary to actually honor the configured rate, but too much accumulation is exactly what causes a burst — an inherent trade-off.
+The reason becomes clear once you dig into `pv`'s source code. In short, it keeps track of how many bytes it's currently allowed to send (presumably built around the idea of an *average* transfer rate), and this value keeps climbing while nothing is being output. Left completely unbounded, though, it would let bursts grow without limit. There does seem to be some awareness of this on `pv`'s side — the accumulated value is capped so it never exceeds the configured rate times 5 seconds (`RATE_BURST_WINDOW`, in `pv-internal.h`). The burst ceiling we actually measured (60 bytes, i.e. 6 seconds' worth) runs a bit higher than that 5-second (50-byte) figure from the constant; this extra margin is likely down to some other buffering elsewhere in `pv`'s transfer path (such as an intermediate pipe). Some amount of accumulation is necessary to actually honor the configured rate, but too much accumulation is exactly what causes a burst — an inherent trade-off.
 
 #### How valve Solves This
 
