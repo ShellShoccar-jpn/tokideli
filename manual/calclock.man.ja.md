@@ -118,3 +118,7 @@ $ calclock 1 access.log > access2.log
 ## 規格への準拠
 
 シェルスクリプト版はIEEE Std 1003.1-2001（“POSIX.1”）に準拠したsh向けのシェルスクリプトで書かれており、かつ、呼び出している各コマンドは同規格の仕様の範囲内です。C言語版はC99、およびIEEE Std 1003.1-2008（“POSIX.1”）に準拠させてあります。
+
+## 関連項目
+
+[タイミング付きテキストデータをトリックプレイする方法](trick_plays_with_awk_and_tscat.info.ja.md)

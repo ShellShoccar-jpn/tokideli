@@ -195,4 +195,4 @@ The source code of this command is written to conform to C99 and IEEE Std 1003.1
 
 ## See Also
 
-[linets(1)](linets.man.en.md), [typeliner(1)](typeliner.man.en.md), [tscat(1)](tscat.man.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md), [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md)
+[linets(1)](linets.man.en.md), [typeliner(1)](typeliner.man.en.md), [tscat(1)](tscat.man.en.md), [Smooth out data delivery by delaying it, just like live video streaming](smooth_out_data_delivery_like_live_video_streaming.info.en.md), [Comparing tokideli's Commands with Similar Existing Tools — Why We Reinvented the Wheel](tokideli_vs_simillar_products.info.en.md), [How to Trick-Play Timestamped Text Data](trick_plays_with_awk_and_tscat.info.en.md)

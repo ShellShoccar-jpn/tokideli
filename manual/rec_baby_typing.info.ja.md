@@ -86,6 +86,10 @@ $ cat /PATH/TO/TOKIDELI/manual/rec_baby_typing.info.ja.md | sed -n '/BEGIN_BABY_
 
 未来の天才ハッカーに祝福を！
 
+## 関連項目
+
+[typeliner(1)](typeliner.man.ja.md)、[linets(1)](linets.man.ja.md)、[tscat(1)](tscat.man.ja.md)、[タイミング付きテキストデータをトリックプレイする方法](trick_plays_with_awk_and_tscat.info.ja.md)
+
 ## 付録: とある赤ちゃんのタイピングデータ
 
 ```

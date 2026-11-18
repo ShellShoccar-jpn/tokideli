@@ -118,3 +118,7 @@ The original of this command is Open usp Tukubai by USP Laboratory Co., Ltd.; th
 ## Compliance with Standards
 
 The shell-script version is written as a shell script for sh that conforms to IEEE Std 1003.1-2001 ("POSIX.1"), and every command it invokes stays within the scope of that same standard. The C-language version conforms to C99, and to IEEE Std 1003.1-2008 ("POSIX.1").
+
+## See Also
+
+[How to Trick-Play Timestamped Text Data](trick_plays_with_awk_and_tscat.info.en.md)

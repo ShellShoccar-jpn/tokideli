@@ -87,6 +87,10 @@ $ cat /PATH/TO/TOKIDELI/manual/rec_baby_typing.info.en.md | sed -n '/BEGIN_BABY_
 
 Blessings to the future genius hacker!
 
+## See Also
+
+[typeliner(1)](typeliner.man.en.md), [linets(1)](linets.man.en.md), [tscat(1)](tscat.man.en.md), [How to Trick-Play Timestamped Text Data](trick_plays_with_awk_and_tscat.info.en.md)
+
 ## Appendix: One Baby's Typing Data
 
 ```
