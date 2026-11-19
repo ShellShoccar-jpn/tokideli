@@ -133,7 +133,7 @@ To play this back at half speed, let's add the approach shown above into an AWK 
 $ cat 1to10_unixtime.txt |
   awk -v spd=0.5 'BEGIN {if (!getline) {exit;}; t0=$1*1; print 0,$2;}
                   {print ($1-t0)/spd,$2;                            }' |
-  tscat -zZ
+  tscat -z
 1
 2
 3
@@ -198,7 +198,7 @@ $ cat 1to10_caltime.txt |
   calclock 1          |
   awk -v spd=0.5 'BEGIN {if (!getline) {exit;}; t0=$2*1; print 0,$3;}
                   {print ($2-t0)/spd,$3;                            }' |
-  tscat -zZ
+  tscat -z
 1
 2
 3
